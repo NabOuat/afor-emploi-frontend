@@ -1,0 +1,343 @@
+.projects-management {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 2rem;
+  display: block;
+  overflow-y: auto;
+}
+
+.projects-management.dark-mode {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.projects-header {
+  background: linear-gradient(135deg, #FF8C00 0%, #FF6B35 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(255, 140, 0, 0.3);
+}
+
+.projects-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.projects-header p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 1rem;
+}
+
+.projects-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.projects-management.dark-mode .projects-container {
+  background: linear-gradient(135deg, #2d2d44 0%, #1f1f2e 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.projects-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  color: #7f8c8d;
+}
+
+.projects-management.dark-mode .search-box {
+  background: #3a3a52;
+  border-color: #4a4a6a;
+  color: #aaa;
+}
+
+.search-box input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  color: #2c3e50;
+  outline: none;
+}
+
+.projects-management.dark-mode .search-box input {
+  color: #e0e0e0;
+}
+
+.search-box input::placeholder {
+  color: #7f8c8d;
+}
+
+.filter-select {
+  padding: 0.8rem 1rem;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.projects-management.dark-mode .filter-select {
+  background: #3a3a52;
+  border-color: #4a4a6a;
+  color: #e0e0e0;
+}
+
+.filter-select:hover {
+  border-color: #FF8C00;
+}
+
+.btn-add {
+  background: linear-gradient(135deg, #FF8C00 0%, #FF6B35 100%);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
+}
+
+.btn-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 140, 0, 0.4);
+}
+
+.projects-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+.projects-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.projects-table thead {
+  background: #f8f9fa;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.projects-management.dark-mode .projects-table thead {
+  background: #3a3a52;
+  border-bottom-color: #4a4a6a;
+}
+
+.projects-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.projects-management.dark-mode .projects-table th {
+  color: #e0e0e0;
+}
+
+.projects-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  color: #2c3e50;
+}
+
+.projects-management.dark-mode .projects-table td {
+  border-bottom-color: #4a4a6a;
+  color: #e0e0e0;
+}
+
+.projects-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.projects-management.dark-mode .projects-table tbody tr:hover {
+  background: #3a3a52;
+}
+
+.project-name {
+  font-weight: 600;
+  color: #FF8C00;
+}
+
+.project-desc {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+
+.projects-management.dark-mode .project-desc {
+  color: #aaa;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status.in-progress {
+  background: rgba(52, 152, 219, 0.1);
+  color: #3498db;
+}
+
+.status.planned {
+  background: rgba(241, 196, 15, 0.1);
+  color: #f39c12;
+}
+
+.status.completed {
+  background: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+}
+
+.budget {
+  font-weight: 600;
+  color: #FF8C00;
+}
+
+.progress-bar {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  background: #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.projects-management.dark-mode .progress-bar {
+  background: #4a4a6a;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FF8C00 0%, #FF6B35 100%);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.dates {
+  font-size: 0.85rem;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-action {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-action.view {
+  color: #3498db;
+}
+
+.btn-action.view:hover {
+  background: rgba(52, 152, 219, 0.1);
+}
+
+.btn-action.edit {
+  color: #f39c12;
+}
+
+.btn-action.edit:hover {
+  background: rgba(243, 156, 18, 0.1);
+}
+
+.btn-action.delete {
+  color: #e74c3c;
+}
+
+.btn-action.delete:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+
+.projects-footer {
+  text-align: right;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.projects-management.dark-mode .projects-footer {
+  color: #aaa;
+}
+
+@media (max-width: 768px) {
+  .projects-management {
+    padding: 1rem;
+  }
+
+  .projects-container {
+    padding: 1rem;
+  }
+
+  .projects-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    min-width: 100%;
+  }
+
+  .filter-select,
+  .btn-add {
+    width: 100%;
+  }
+
+  .projects-table {
+    font-size: 0.85rem;
+  }
+
+  .projects-table th,
+  .projects-table td {
+    padding: 0.75rem;
+  }
+}

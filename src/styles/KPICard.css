@@ -1,0 +1,132 @@
+.kpi-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border-left: 4px solid #FF8C00;
+}
+
+.kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.kpi-card.kpi-blue {
+  border-left-color: #3498db;
+}
+
+.kpi-card.kpi-green {
+  border-left-color: #2ecc71;
+}
+
+.kpi-card.kpi-red {
+  border-left-color: #e74c3c;
+}
+
+.kpi-card.kpi-purple {
+  border-left-color: #9b59b6;
+}
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.kpi-title {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  font-weight: 600;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 140, 0, 0.1);
+  border-radius: 8px;
+  color: #FF8C00;
+}
+
+.kpi-card.kpi-blue .kpi-icon {
+  background: rgba(52, 152, 219, 0.1);
+  color: #3498db;
+}
+
+.kpi-card.kpi-green .kpi-icon {
+  background: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+}
+
+.kpi-card.kpi-red .kpi-icon {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+.kpi-card.kpi-purple .kpi-icon {
+  background: rgba(155, 89, 182, 0.1);
+  color: #9b59b6;
+}
+
+.kpi-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1;
+}
+
+.kpi-unit {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  margin-left: 0.5rem;
+  font-weight: 500;
+}
+
+.kpi-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+}
+
+.kpi-trend.positive {
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.1);
+}
+
+.kpi-trend.negative {
+  color: #e74c3c;
+  background: rgba(231, 76, 60, 0.1);
+}
+
+@media (max-width: 768px) {
+  .kpi-card {
+    padding: 1rem;
+  }
+
+  .kpi-value {
+    font-size: 1.5rem;
+  }
+
+  .kpi-icon {
+    width: 32px;
+    height: 32px;
+  }
+}
