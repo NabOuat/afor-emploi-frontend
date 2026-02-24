@@ -39,7 +39,7 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
   // Déterminer si les engagements doivent être affichés selon le type d'acteur
   useEffect(() => {
     try {
-      const userStr = localStorage.getItem('user');
+      const userStr = sessionStorage.getItem('user');
       if (userStr) {
         const user = JSON.parse(userStr);
         const actorType = user.actor_type;

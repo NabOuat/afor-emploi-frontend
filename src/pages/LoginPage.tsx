@@ -15,7 +15,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated) {
       // Vérifier le type d'acteur et rediriger vers le bon dashboard
-      const userStr = localStorage.getItem('user');
+      const userStr = sessionStorage.getItem('user');
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
@@ -66,7 +66,7 @@ export default function LoginPage() {
       await login({ username, password });
       setTimeout(() => {
         // Vérifier le type d'acteur et rediriger vers le bon dashboard
-        const userStr = localStorage.getItem('user');
+        const userStr = sessionStorage.getItem('user');
         if (userStr) {
           try {
             const user = JSON.parse(userStr);

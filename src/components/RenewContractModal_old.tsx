@@ -65,12 +65,12 @@ export default function RenewContractModal({ employee, isOpen, onClose, darkMode
   const diplomes = (diplomesData as unknown as string[]) || [];
   const ecoles = (ecolesData as unknown as string[]) || [];
   const categories = (categoriesData as unknown as string[]) || ['Cadre', 'Agent', 'Technicien', 'Ouvrier'];
-  const acteurId = localStorage.getItem('acteur_id');
+  const acteurId = sessionStorage.getItem('acteur_id');
   
   // Déterminer si les engagements doivent être affichés selon le type d'acteur
   useEffect(() => {
     try {
-      const userStr = localStorage.getItem('user');
+      const userStr = sessionStorage.getItem('user');
       if (userStr) {
         const user = JSON.parse(userStr);
         const actorType = user.actor_type;

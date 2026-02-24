@@ -131,7 +131,7 @@ export default function AforDashboard() {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
       // Récupérer l'acteur_id de l'utilisateur connecté
-      const acteurId = localStorage.getItem('acteur_id');
+      const acteurId = sessionStorage.getItem('acteur_id');
       
       // Pour AFOR, on utilise les endpoints opérateur avec l'acteur_id de l'utilisateur
       const [statsRes, posRes, zoneRes, contractRes, avgRes, projRes, genderRes, ageRes, typesRes, educRes, renewalRes, schoolsRes, hiresRes] = await Promise.all([
@@ -169,13 +169,13 @@ export default function AforDashboard() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
       navigate('/login');
       return;
     }
     
-    const acteurId = localStorage.getItem('acteur_id');
+    const acteurId = sessionStorage.getItem('acteur_id');
     if (!acteurId) {
       navigate('/login');
       return;

@@ -20,12 +20,59 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedUser = authService.getUser();
-    if (storedUser && authService.isAuthenticated()) {
-      setUser(storedUser);
+    // Vérification initiale : session valide dans cet onglet ?
+    if (authService.isAuthenticated()) {
+      const storedUser = authService.getUser();
+      if (storedUser) setUser(storedUser);
     }
     setIsLoading(false);
+
+    // Écouter la réponse d'un autre onglet qui partage sa session
+    const onRestored = () => {
+      if (authService.isAuthenticated()) {
+        const storedUser = authService.getUser();
+        if (storedUser) {
+          setUser(storedUser);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    // Écouter la déconnexion d'un autre onglet
+    const onLogout = () => {
+      setUser(null);
+      setError(null);
+    };
+
+    window.addEventListener('session_restored', onRestored);
+    window.addEventListener('session_logout', onLogout);
+    return () => {
+      window.removeEventListener('session_restored', onRestored);
+      window.removeEventListener('session_logout', onLogout);
+    };
   }, []);
+
+  // Vérification auto de l'expiration toutes les minutes + renouvellement sur activité
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      if (!authService.isAuthenticated()) {
+        setUser(null);
+        setError(null);
+      }
+    }, 60_000);
+
+    const onActivity = () => authService.refreshExpiry();
+    window.addEventListener('click', onActivity);
+    window.addEventListener('keydown', onActivity);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('click', onActivity);
+      window.removeEventListener('keydown', onActivity);
+    };
+  }, [user]);
 
   const login = async (credentials: LoginRequest) => {
     setIsLoading(true);
