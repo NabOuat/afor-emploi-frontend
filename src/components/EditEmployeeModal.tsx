@@ -49,7 +49,7 @@ export default function EditEmployeeModal({ employee, isOpen, onClose, darkMode 
   const [showEngagements, setShowEngagements] = useState(true);
   const [selectedProjet, setSelectedProjet] = useState<string>('');
   const [selectedEngagement, setSelectedEngagement] = useState<string>('');
-  const acteurId = localStorage.getItem('acteur_id');
+  const acteurId = sessionStorage.getItem('acteur_id');
   
   const [formData, setFormData] = useState({
     nom: employee?.nom || '',
@@ -115,7 +115,7 @@ export default function EditEmployeeModal({ employee, isOpen, onClose, darkMode 
   // Déterminer si les engagements doivent être affichés selon le type d'acteur
   useEffect(() => {
     try {
-      const userStr = localStorage.getItem('user');
+      const userStr = sessionStorage.getItem('user');
       if (userStr) {
         const user = JSON.parse(userStr);
         const actorType = user.actor_type;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, User, LogOut, Moon, Sun, Menu, X, BarChart3, Users, Briefcase, MapPin, TrendingUp, Globe, Award, Clock, DollarSign } from 'lucide-react';
+import { LayoutDashboard, User, LogOut, Moon, Sun, Menu, X, BarChart3, Users, Briefcase, MapPin, TrendingUp, Globe, Award, Clock, DollarSign, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/ResponsibleDashboard.css';
 
 interface StatistiqueRH {
@@ -133,6 +134,7 @@ interface GroupeAge {
 
 export default function ResponsibleDashboard() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('vue-ensemble');
@@ -178,7 +180,7 @@ export default function ResponsibleDashboard() {
   const fetchStatistics = async () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const acteurId = localStorage.getItem('acteur_id');
+      const acteurId = sessionStorage.getItem('acteur_id');
       
       const response = await fetch(`${apiUrl}/employees/list/${acteurId}`);
       if (response.ok) {
@@ -632,9 +634,7 @@ export default function ResponsibleDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('acteur_id');
+    logout();
     navigate('/login');
   };
 

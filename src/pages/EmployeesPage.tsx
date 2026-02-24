@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { Search, Edit2, Plus, Moon, Sun, LogOut, ChevronLeft, Users, CheckCircle, AlertCircle, TrendingDown, Download, ChevronLeft as ChevronLeftIcon, ChevronRight, Eye, MapPin, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 import EmployeeModal from '../components/EmployeeModal';
 import EditEmployeeModal from '../components/EditEmployeeModal';
@@ -48,6 +49,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -71,7 +73,7 @@ export default function EmployeesPage() {
   const [projects, setProjects] = useState<{ id: string; nom: string }[]>([]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
       navigate('/login');
       return;
@@ -83,7 +85,7 @@ export default function EmployeesPage() {
     // Récupérer les employés de l'utilisateur connecté
     const fetchEmployees = async () => {
       try {
-        const acteurId = localStorage.getItem('acteur_id');
+        const acteurId = sessionStorage.getItem('acteur_id');
         if (!acteurId) {
           navigate('/login');
           return;
@@ -183,7 +185,7 @@ export default function EmployeesPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    logout();
     navigate('/login');
   };
 
@@ -303,7 +305,7 @@ export default function EmployeesPage() {
     // Recharger la liste des employés après une reconduction réussie
     const fetchEmployees = async () => {
       try {
-        const acteurId = localStorage.getItem('acteur_id');
+        const acteurId = sessionStorage.getItem('acteur_id');
         if (!acteurId) return;
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -1007,7 +1009,7 @@ export default function EmployeesPage() {
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
         darkMode={darkMode}
-        acteurId={localStorage.getItem('acteur_id') || undefined}
+        acteurId={sessionStorage.getItem('acteur_id') || undefined}
       />
     </div>
   );

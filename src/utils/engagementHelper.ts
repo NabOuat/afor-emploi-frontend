@@ -26,7 +26,7 @@ export const shouldShowEngagements = (actorType: string | null | undefined): boo
  */
 export const getActorTypeFromStorage = (): string | null => {
   try {
-    const userStr = localStorage.getItem('user');
+    const userStr = sessionStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
       return user.actor_type || null;

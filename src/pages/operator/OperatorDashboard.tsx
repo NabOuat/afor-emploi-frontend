@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, ClipboardList, CheckCircle, Clock, AlertCircle, Settings, Briefcase, Upload, Users, TrendingUp, Download, X } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/OperatorDashboard.css';
 
 interface DashboardStats {
@@ -91,6 +92,7 @@ interface ImportProgress {
 
 export default function OperatorDashboard() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [activeNav, setActiveNav] = useState('dashboard');
   const [filterType, setFilterType] = useState<'all' | 'active'>('all');
@@ -158,13 +160,13 @@ export default function OperatorDashboard() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
       navigate('/login');
       return;
     }
     
-    const acteurId = localStorage.getItem('acteur_id');
+    const acteurId = sessionStorage.getItem('acteur_id');
     if (!acteurId) {
       navigate('/login');
       return;
@@ -179,7 +181,7 @@ export default function OperatorDashboard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    logout();
     navigate('/login');
   };
 
@@ -225,7 +227,7 @@ export default function OperatorDashboard() {
         const formData = new FormData();
         formData.append('file', file);
         
-        const acteurId = localStorage.getItem('acteur_id');
+        const acteurId = sessionStorage.getItem('acteur_id');
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         
         const response = await fetch(

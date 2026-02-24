@@ -38,7 +38,7 @@ export default function RegisterPage() {
         formData.firstName,
         formData.lastName
       );
-      localStorage.setItem('token', token);
+      sessionStorage.setItem('token', token);
       navigate('/jobs');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
