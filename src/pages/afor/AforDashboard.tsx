@@ -2,7 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Briefcase, Settings, Upload, Users, TrendingUp, Download, X, CheckCircle, Clock, AlertCircle, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import {
+  ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend
+} from 'recharts';
 import '../../styles/AforDashboard.css';
+
+const AFOR_COLORS = ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6', '#F39C12', '#1ABC9C'];
 
 interface DashboardStats {
   total_employees: number;
@@ -371,173 +377,109 @@ export default function AforDashboard() {
         </div>
 
         <div className="charts-grid">
+          {/* Statut des contrats – PieChart */}
           <div className="chart-card">
             <h3>Statut des Contrats</h3>
-            <div className="status-grid">
-              <div className="status-item">
-                <div className="status-label">Actifs</div>
-                <div className="status-value" style={{ color: '#27AE60' }}>{contractStatus?.active || 0}</div>
-              </div>
-              <div className="status-item">
-                <div className="status-label">Terminés</div>
-                <div className="status-value" style={{ color: '#3498DB' }}>{contractStatus?.completed || 0}</div>
-              </div>
-            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Actifs', value: contractStatus?.active || 0 },
+                    { name: 'Terminés', value: contractStatus?.completed || 0 },
+                  ]}
+                  cx="50%" cy="50%" outerRadius={80} dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}`} labelLine={false}
+                >
+                  <Cell fill="#27AE60" />
+                  <Cell fill="#3498DB" />
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
 
-          <div className="chart-card">
-            <h3>Répartition par Projet</h3>
-            <div className="positions-list">
-              {employeesByProject.slice(0, 5).map((proj, index) => (
-                <div key={index} className="position-item">
-                  <div className="position-name">{proj.project_name}</div>
-                  <div className="position-bar">
-                    <div className="position-progress" style={{ width: `${(proj.count / Math.max(...employeesByProject.map(p => p.count), 1)) * 100}%` }}></div>
-                  </div>
-                  <div className="position-count">{proj.count}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          {/* Répartition par Genre – PieChart */}
           <div className="chart-card">
             <h3>Répartition par Genre</h3>
-            <div className="positions-list">
-              {employeesByGender.map((gender, index) => {
-                const genderLabel = gender.gender === 'M' ? 'Homme' : gender.gender === 'F' ? 'Femme' : gender.gender;
-                return (
-                  <div key={index} className="position-item">
-                    <div className="position-name">{genderLabel}</div>
-                    <div className="position-bar">
-                      <div className="position-progress" style={{ width: `${gender.percentage}%` }}></div>
-                    </div>
-                    <div className="position-count">{gender.count} ({gender.percentage}%)</div>
-                  </div>
-                );
-              })}
-            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={employeesByGender.map(g => ({
+                    name: g.gender === 'M' ? 'Hommes' : g.gender === 'F' ? 'Femmes' : g.gender,
+                    value: g.count,
+                  }))}
+                  cx="50%" cy="50%" outerRadius={80} dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}
+                >
+                  {employeesByGender.map((_, i) => <Cell key={i} fill={AFOR_COLORS[i]} />)}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
 
-          <div className="chart-card">
-            <h3>Statistiques d'Âge</h3>
-            <div className="info-list">
-              <div className="info-item">
-                <span className="info-label">Âge Moyen:</span>
-                <span className="info-value">{ageStats?.average_age || 0} ans</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Âge Min:</span>
-                <span className="info-value">{ageStats?.min_age || 0} ans</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Âge Max:</span>
-                <span className="info-value">{ageStats?.max_age || 0} ans</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Groupe 18-25:</span>
-                <span className="info-value">{ageStats?.age_groups?.["18-25"] || 0}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Groupe 26-35:</span>
-                <span className="info-value">{ageStats?.age_groups?.["26-35"] || 0}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Groupe 36-45:</span>
-                <span className="info-value">{ageStats?.age_groups?.["36-45"] || 0}</span>
-              </div>
-            </div>
-          </div>
-
+          {/* Top 5 Postes – BarChart */}
           <div className="chart-card">
             <h3>Top 5 Postes</h3>
-            <div className="positions-list">
-              {employeesByPosition.slice(0, 5).map((pos, index) => (
-                <div key={index} className="position-item">
-                  <div className="position-name">{pos.position}</div>
-                  <div className="position-bar">
-                    <div className="position-progress" style={{ width: `${(pos.count / Math.max(...employeesByPosition.map(p => p.count), 1)) * 100}%` }}></div>
-                  </div>
-                  <div className="position-count">{pos.count}</div>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={employeesByPosition.slice(0, 5)} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="position" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v) => [v, 'Employés']} />
+                <Bar dataKey="count" fill="#FF8C00" radius={[4, 4, 0, 0]} name="Employés" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
+          {/* Types de contrats – BarChart */}
           <div className="chart-card">
-            <h3>Employés par Zone</h3>
-            <div className="zones-list">
-              {employeesByZone.slice(0, 5).map((zone, index) => (
-                <div key={index} className="zone-item">
-                  <div className="zone-info">
-                    <p className="zone-name">{zone.region} - {zone.departement}</p>
-                    <p className="zone-count">{zone.count} employé(s)</p>
-                  </div>
-                  <div className="zone-bar">
-                    <div className="zone-progress" style={{ width: `${(zone.count / Math.max(...employeesByZone.map(z => z.count), 1)) * 100}%` }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <h3>Types de Contrats</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={contractTypes.slice(0, 5)} margin={{ top: 5, right: 10, left: 0, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="type" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v, n) => [v, n === 'count' ? 'Contrats' : n]} />
+                <Bar dataKey="count" fill="#3498DB" radius={[4, 4, 0, 0]} name="Contrats" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
-          <div className="chart-card">
-            <h3>Informations Clés</h3>
-            <div className="info-list">
-              <div className="info-item">
-                <span className="info-label">Total Contrats:</span>
-                <span className="info-value">{avgContractDuration?.total_contracts || 0}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Durée Moyenne:</span>
-                <span className="info-value">{avgContractDuration?.average_months || 0} mois</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Dernière Connexion:</span>
-                <span className="info-value">
-                  {stats?.last_login ? new Date(stats.last_login).toLocaleDateString('fr-FR') : 'N/A'}
-                </span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Taux d'Activité:</span>
-                <span className="info-value">
-                  {stats && stats.total_employees > 0 
-                    ? Math.round((stats.active_contracts / stats.total_employees) * 100) 
-                    : 0}%
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="chart-card">
-            <h3>Répartition par Type de Contrat</h3>
-            <div className="positions-list">
-              {contractTypes.slice(0, 5).map((type, index) => (
-                <div key={index} className="position-item">
-                  <div className="position-name">{type.type}</div>
-                  <div className="position-bar">
-                    <div className="position-progress" style={{ width: `${type.percentage}%` }}></div>
-                  </div>
-                  <div className="position-count">{type.count} ({type.percentage}%)</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          {/* Niveau d'éducation – BarChart horizontal */}
           <div className="chart-card">
             <h3>Niveau d'Éducation</h3>
-            <div className="positions-list">
-              {educationLevels.slice(0, 5).map((edu, index) => (
-                <div key={index} className="position-item">
-                  <div className="position-name">{edu.level}</div>
-                  <div className="position-bar">
-                    <div className="position-progress" style={{ width: `${edu.percentage}%` }}></div>
-                  </div>
-                  <div className="position-count">{edu.count} ({edu.percentage}%)</div>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={educationLevels.slice(0, 5)} layout="vertical" margin={{ top: 5, right: 20, left: 70, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis type="number" tick={{ fontSize: 11 }} />
+                <YAxis dataKey="level" type="category" tick={{ fontSize: 10 }} width={70} />
+                <Tooltip formatter={(v) => [v, 'Employés']} />
+                <Bar dataKey="count" fill="#9B59B6" radius={[0, 4, 4, 0]} name="Employés" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
+          {/* Employés par Zone – BarChart */}
+          <div className="chart-card">
+            <h3>Employés par Zone (Top 5)</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={employeesByZone.slice(0, 5).map(z => ({ zone: `${z.region.slice(0, 8)}`, count: z.count }))}
+                margin={{ top: 5, right: 10, left: 0, bottom: 40 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="zone" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v) => [v, 'Employés']} />
+                <Bar dataKey="count" fill="#27AE60" radius={[4, 4, 0, 0]} name="Employés" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Taux de renouvellement – info card (garde le design original) */}
           <div className="chart-card">
             <h3>Taux de Renouvellement</h3>
             <div className="info-list">
@@ -554,42 +496,98 @@ export default function AforDashboard() {
                 <span className="info-value">{renewalRate?.total || 0}</span>
               </div>
               <div className="info-item">
-                <span className="info-label">Taux de Renouvellement:</span>
-                <span className="info-value" style={{ color: '#F39C12', fontSize: '18px', fontWeight: 'bold' }}>
+                <span className="info-label">Taux:</span>
+                <span className="info-value" style={{ color: '#F39C12', fontSize: '22px', fontWeight: '700' }}>
                   {renewalRate?.renewal_rate || 0}%
+                </span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">Durée Moy. Contrat:</span>
+                <span className="info-value">{avgContractDuration?.average_months || 0} mois</span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">Dernière Connexion:</span>
+                <span className="info-value">
+                  {stats?.last_login ? new Date(stats.last_login).toLocaleDateString('fr-FR') : 'N/A'}
                 </span>
               </div>
             </div>
           </div>
 
+          {/* Top Écoles – BarChart */}
           <div className="chart-card">
-            <h3>Top 5 Écoles/Formations</h3>
-            <div className="positions-list">
-              {topSchools.map((school, index) => (
-                <div key={index} className="position-item">
-                  <div className="position-name">{school.school}</div>
-                  <div className="position-bar">
-                    <div className="position-progress" style={{ width: `${(school.count / Math.max(...topSchools.map(s => s.count), 1)) * 100}%` }}></div>
-                  </div>
-                  <div className="position-count">{school.count}</div>
-                </div>
-              ))}
+            <h3>Top 5 Écoles / Formations</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={topSchools.slice(0, 5).map(s => ({ school: s.school.slice(0, 12), count: s.count }))}
+                margin={{ top: 5, right: 10, left: 0, bottom: 50 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="school" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v) => [v, 'Diplômés']} />
+                <Bar dataKey="count" fill="#F39C12" radius={[4, 4, 0, 0]} name="Diplômés" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Embauches par mois – BarChart */}
+          <div className="chart-card chart-card-wide">
+            <h3>Embauches par Mois (12 derniers mois)</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={monthlyHires} margin={{ top: 5, right: 20, left: 0, bottom: 30 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v) => [v, 'Embauches']} />
+                <Bar dataKey="count" fill="#1ABC9C" radius={[4, 4, 0, 0]} name="Embauches" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Statistiques d'Âge – BarChart */}
+          <div className="chart-card">
+            <h3>Groupes d'Âge</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={[
+                  { tranche: '18-25', count: ageStats?.age_groups?.['18-25'] || 0 },
+                  { tranche: '26-35', count: ageStats?.age_groups?.['26-35'] || 0 },
+                  { tranche: '36-45', count: ageStats?.age_groups?.['36-45'] || 0 },
+                  { tranche: '46-55', count: ageStats?.age_groups?.['46-55'] || 0 },
+                  { tranche: '56+',   count: ageStats?.age_groups?.['56+']   || 0 },
+                ]}
+                margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="tranche" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v) => [v, 'Employés']} />
+                <Bar dataKey="count" fill="#E74C3C" radius={[4, 4, 0, 0]} name="Employés" />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="age-summary">
+              <span>Moy: <strong>{ageStats?.average_age || 0} ans</strong></span>
+              <span>Min: <strong>{ageStats?.min_age || 0}</strong></span>
+              <span>Max: <strong>{ageStats?.max_age || 0}</strong></span>
             </div>
           </div>
 
+          {/* Répartition par Projet – BarChart */}
           <div className="chart-card">
-            <h3>Embauches par Mois (12 derniers mois)</h3>
-            <div className="positions-list">
-              {monthlyHires.slice(-6).map((hire, index) => (
-                <div key={index} className="position-item">
-                  <div className="position-name">{hire.month}</div>
-                  <div className="position-bar">
-                    <div className="position-progress" style={{ width: `${(hire.count / Math.max(...monthlyHires.map(h => h.count), 1)) * 100}%` }}></div>
-                  </div>
-                  <div className="position-count">{hire.count}</div>
-                </div>
-              ))}
-            </div>
+            <h3>Répartition par Projet</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={employeesByProject.slice(0, 5).map(p => ({ name: p.project_name.slice(0, 12), count: p.count }))}
+                margin={{ top: 5, right: 10, left: 0, bottom: 40 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v) => [v, 'Employés']} />
+                <Bar dataKey="count" fill="#FF8C00" radius={[4, 4, 0, 0]} name="Employés" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
