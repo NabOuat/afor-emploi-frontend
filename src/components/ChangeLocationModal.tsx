@@ -49,7 +49,7 @@ export default function ChangeLocationModal({ employee, isOpen, onClose, darkMod
   const [selectedEngagement, setSelectedEngagement] = useState<string>('');
   const [engagements, setEngagements] = useState<Array<{id: string, nom: string, description: string}>>([]);
   const [showEngagements, setShowEngagements] = useState(true);
-  const acteurId = localStorage.getItem('acteur_id');
+  const acteurId = sessionStorage.getItem('acteur_id');
 
   // Ajouter les styles d'animation une seule fois au chargement du composant
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function ChangeLocationModal({ employee, isOpen, onClose, darkMod
   // Déterminer si les engagements doivent être affichés selon le type d'acteur
   useEffect(() => {
     try {
-      const userStr = localStorage.getItem('user');
+      const userStr = sessionStorage.getItem('user');
       if (userStr) {
         const user = JSON.parse(userStr);
         const actorType = user.actor_type;
@@ -288,7 +288,7 @@ export default function ChangeLocationModal({ employee, isOpen, onClose, darkMod
       }
       
       // Récupérer le contrat_id de l'employé
-      const employeeResponse = await fetch(`${apiUrl}/employees/list/${localStorage.getItem('acteur_id')}`);
+      const employeeResponse = await fetch(`${apiUrl}/employees/list/${sessionStorage.getItem('acteur_id')}`);
       if (!employeeResponse.ok) {
         const errorText = await employeeResponse.text();
         console.error('Erreur API:', errorText);
