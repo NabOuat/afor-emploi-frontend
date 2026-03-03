@@ -286,9 +286,13 @@ html.dark-mode .stat-value {
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
   animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.chart-card-wide {
+  grid-column: span 2;
 }
 
 .chart-card {
@@ -597,4 +601,28 @@ html.dark-mode .action-btn:hover {
   .jobs-table td {
     padding: 0.75rem 0.5rem;
   }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card-wide {
+    grid-column: span 1;
+  }
 }
+
+.age-summary {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #7f8c8d;
+}
+
+.age-summary strong {
+  color: #2c3e50;
+}
+
+html.dark-mode .age-summary strong { color: #e0e0e0; }
+html.dark-mode .age-summary { color: #9e9e9e; }
