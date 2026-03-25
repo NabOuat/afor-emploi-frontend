@@ -242,6 +242,80 @@
   flex-direction: column;
 }
 
+/* ---------- Desktop top bar (AppBar) ---------- */
+.app-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 1.75rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e5ec;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.app-topbar.dark {
+  background: #1c2333;
+  border-bottom-color: #2a3347;
+}
+
+.app-topbar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a2332;
+  letter-spacing: 0.3px;
+}
+
+.app-topbar.dark .app-topbar-title {
+  color: #e8edf3;
+}
+
+.app-topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.app-topbar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 140, 0, 0.12);
+  color: #FF8C00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 140, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.app-topbar-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.app-topbar-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1a2332;
+}
+
+.app-topbar.dark .app-topbar-name {
+  color: #e8edf3;
+}
+
+.app-topbar-role {
+  font-size: 0.7rem;
+  color: #FF8C00;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
 /* ---------- Mobile top bar ---------- */
 .mobile-topbar {
   display: none;
@@ -314,6 +388,11 @@
   /* Mobile topbar always visible */
   .mobile-topbar {
     display: flex;
+  }
+
+  /* Desktop app-topbar hidden on mobile */
+  .app-topbar {
+    display: none;
   }
 
   /* Sidebar becomes an off-screen overlay */

@@ -23,7 +23,20 @@ export default function AdminDashboard() {
   useEffect(() => {
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
     setStats(prev => ({ ...prev, darkMode: savedDarkMode }));
+    if (savedDarkMode) {
+      document.documentElement.classList.add('dark-mode');
+    } else {
+      document.documentElement.classList.remove('dark-mode');
+    }
   }, []);
+
+  useEffect(() => {
+    if (stats.darkMode) {
+      document.documentElement.classList.add('dark-mode');
+    } else {
+      document.documentElement.classList.remove('dark-mode');
+    }
+  }, [stats.darkMode]);
 
   const regionData = [
     { name: 'Cascades', value: 180 },

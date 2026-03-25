@@ -10,13 +10,12 @@ interface SidebarLayoutProps {
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode,   setDarkMode]   = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('darkMode') === 'true';
     setDarkMode(saved);
 
-    // Sync dark mode badge when Sidebar toggles it
     const observer = new MutationObserver(() => {
       setDarkMode(document.documentElement.classList.contains('dark-mode'));
     });

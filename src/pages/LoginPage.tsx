@@ -4,6 +4,16 @@ import { Mail, Lock, Moon, Sun, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import '../styles/LoginPage.css';
 
+function getDashboardPath(actorType: string | null): string {
+  switch ((actorType || '').toUpperCase()) {
+    case 'AF':    return '/afor/dashboard';
+    case 'OF':    return '/operator/dashboard';
+    case 'AD':    return '/admin/dashboard';
+    case 'RESPO': return '/responsable/dashboard';
+    default:      return '/dashboard';
+  }
+}
+
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -14,25 +24,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Vérifier le type d'acteur et rediriger vers le bon dashboard
-      const userStr = sessionStorage.getItem('user');
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          const actorType = user.actor_type;
-          
-          if (actorType === 'RESPO') {
-            navigate('/responsable/dashboard');
-          } else {
-            navigate('/dashboard');
-          }
-        } catch (err) {
-          console.error('Erreur lors de la lecture du type d\'acteur:', err);
-          navigate('/dashboard');
-        }
-      } else {
-        navigate('/dashboard');
-      }
+      const actorType = sessionStorage.getItem('actor_type') || null;
+      navigate(getDashboardPath(actorType));
     }
   }, [isAuthenticated, navigate]);
 
@@ -64,27 +57,8 @@ export default function LoginPage() {
 
     try {
       await login({ username, password });
-      setTimeout(() => {
-        // Vérifier le type d'acteur et rediriger vers le bon dashboard
-        const userStr = sessionStorage.getItem('user');
-        if (userStr) {
-          try {
-            const user = JSON.parse(userStr);
-            const actorType = user.actor_type;
-            
-            if (actorType === 'RESPO') {
-              navigate('/responsable/dashboard');
-            } else {
-              navigate('/dashboard');
-            }
-          } catch (err) {
-            console.error('Erreur lors de la lecture du type d\'acteur:', err);
-            navigate('/dashboard');
-          }
-        } else {
-          navigate('/dashboard');
-        }
-      }, 100);
+      const actorType = sessionStorage.getItem('actor_type') || null;
+      navigate(getDashboardPath(actorType));
     } catch (err) {
       console.error('Login error:', err);
     }

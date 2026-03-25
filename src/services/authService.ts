@@ -49,6 +49,7 @@ class AuthService {
             token: sessionStorage.getItem(this.tokenKey),
             user: sessionStorage.getItem(this.userKey),
             acteur_id: sessionStorage.getItem(this.acteurKey),
+            actor_type: sessionStorage.getItem('actor_type'),
             expiry: sessionStorage.getItem(this.expiryKey),
           },
         });
@@ -59,6 +60,7 @@ class AuthService {
         sessionStorage.setItem(this.tokenKey, data.token);
         if (data.user) sessionStorage.setItem(this.userKey, data.user);
         if (data.acteur_id) sessionStorage.setItem(this.acteurKey, data.acteur_id);
+        if (data.actor_type) sessionStorage.setItem('actor_type', data.actor_type);
         if (data.expiry) sessionStorage.setItem(this.expiryKey, data.expiry);
         window.dispatchEvent(new Event('session_restored'));
       }
@@ -74,6 +76,7 @@ class AuthService {
     sessionStorage.removeItem(this.userKey);
     sessionStorage.removeItem(this.acteurKey);
     sessionStorage.removeItem(this.expiryKey);
+    sessionStorage.removeItem('actor_type');
   }
 
   async login(credentials: LoginRequest): Promise<LoginResponse> {
@@ -95,8 +98,12 @@ class AuthService {
     sessionStorage.setItem(this.userKey, JSON.stringify({
       username: data.username,
       actor_type: data.actor_type,
+      acteur_id: data.acteur_id,
     }));
     sessionStorage.setItem(this.expiryKey, String(expiry));
+    if (data.actor_type) {
+      sessionStorage.setItem('actor_type', data.actor_type);
+    }
     if (data.acteur_id) {
       sessionStorage.setItem(this.acteurKey, data.acteur_id);
     }
