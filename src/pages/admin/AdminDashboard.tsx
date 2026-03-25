@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Briefcase, TrendingUp, BarChart3, Download } from 'lucide-react';
+import { Users, Briefcase, TrendingUp, Download } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import AdminHeader from '../../components/AdminHeader';
 import '../../styles/AdminDashboard.css';
 
 interface DashboardStats {
@@ -13,7 +11,6 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalActeurs: 17,
     totalPersonnel: 1287,
@@ -87,11 +84,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="admin-nav">
-          <button className="nav-btn active" onClick={() => navigate('/admin/dashboard')}>Tableau de bord</button>
-          <button className="nav-btn" onClick={() => navigate('/admin/actors')}>Gestion des acteurs</button>
-          <button className="nav-btn" onClick={() => navigate('/admin/projects')}>Gestion des projets</button>
-        </div>
       </div>
 
       <div className="admin-content">

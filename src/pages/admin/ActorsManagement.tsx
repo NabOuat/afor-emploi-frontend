@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, Eye } from 'lucide-react';
-import AdminHeader from '../../components/AdminHeader';
 import '../../styles/ActorsManagement.css';
 
 interface Actor {
@@ -40,9 +39,7 @@ export default function ActorsManagement() {
   });
 
   return (
-    <>
-      <AdminHeader />
-      <div className={`actors-management ${darkMode ? 'dark-mode' : ''}`}>
+    <div className={`actors-management ${darkMode ? 'dark-mode' : ''}`}>
       <div className="actors-header">
         <h1>Gestion des Acteurs</h1>
         <p>Gérez les opérateurs, écoles et agences</p>
@@ -132,7 +129,6 @@ export default function ActorsManagement() {
           <p>Total: {filteredActors.length} acteur(s)</p>
         </div>
       </div>
-      </div>
-    </>
+    </div>
   );
 }

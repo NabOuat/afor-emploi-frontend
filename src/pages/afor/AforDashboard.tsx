@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Briefcase, Settings, Upload, Users, TrendingUp, Download, X, CheckCircle, Clock, AlertCircle, ClipboardList } from 'lucide-react';
+import { Upload, Users, TrendingUp, Download, X, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell,
@@ -98,9 +98,8 @@ interface ImportProgress {
 
 export default function AforDashboard() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout: _logout } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
-  const [activeNav, setActiveNav] = useState('dashboard');
   const [filterType, setFilterType] = useState<'all' | 'active'>('all');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [employeesByPosition, setEmployeesByPosition] = useState<EmployeesByPosition[]>([]);
@@ -126,11 +125,6 @@ export default function AforDashboard() {
   }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   const fetchDashboardData = useCallback(async (filter: string = 'all') => {
     try {
@@ -295,39 +289,6 @@ export default function AforDashboard() {
 
   return (
     <div className={`afor-dashboard ${darkMode ? 'dark-mode' : ''}`}>
-      <div className="afor-sidebar">
-        <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <img src="/afor-logo.jpeg" alt="AFOR" className="logo-img" />
-          </div>
-          <h2>AFOR</h2>
-        </div>
-
-        <nav className="sidebar-nav">
-          <a href="#dashboard" className={`nav-item ${activeNav === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveNav('dashboard')}>
-            <ClipboardList size={20} />
-            <span>Tableau de bord</span>
-          </a>
-          <a href="/employees" className={`nav-item ${activeNav === 'jobs' ? 'active' : ''}`} onClick={() => setActiveNav('jobs')}>
-            <Briefcase size={20} />
-            <span>Emploi</span>
-          </a>
-          <a href="#supervision" className={`nav-item ${activeNav === 'supervision' ? 'active' : ''}`} onClick={() => setActiveNav('supervision')}>
-            <Users size={20} />
-            <span>Superviseur</span>
-          </a>
-          <a href="/afor/settings" className={`nav-item ${activeNav === 'settings' ? 'active' : ''}`} onClick={() => setActiveNav('settings')}>
-            <Settings size={20} />
-            <span>Paramètres</span>
-          </a>
-        </nav>
-
-        <button className="logout-btn" onClick={handleLogout}>
-          <LogOut size={20} />
-          <span>Déconnexion</span>
-        </button>
-      </div>
-
       <div className="afor-main">
         <div className="afor-header">
           <div className="header-content">
@@ -363,9 +324,9 @@ export default function AforDashboard() {
 
         <div className="stats-grid">
           {statCards.map((stat, index) => (
-            <div key={index} className="stat-card">
-              <div className="stat-icon" style={{ backgroundColor: stat.color + '20', color: stat.color }}>
-                <stat.icon size={24} />
+            <div key={index} className="stat-card" style={{ '--stat-color': stat.color } as React.CSSProperties}>
+              <div className="stat-icon" style={{ backgroundColor: stat.color + '18', color: stat.color }}>
+                <stat.icon size={22} />
               </div>
               <div className="stat-content">
                 <p className="stat-label">{stat.label}</p>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Edit2, Plus, Moon, Sun, LogOut, ChevronLeft, Users, CheckCircle, AlertCircle, TrendingDown, Download, ChevronLeft as ChevronLeftIcon, ChevronRight, Eye, MapPin, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Edit2, Plus, Users, CheckCircle, AlertCircle, TrendingDown, Download, ChevronLeft, ChevronRight, Eye, MapPin, RefreshCw, ArrowUp, ArrowDown, BarChart2, FileText } from 'lucide-react';
 import EmployeeModal from '../components/EmployeeModal';
 import EditEmployeeModal from '../components/EditEmployeeModal';
 import ChangeLocationModal from '../components/ChangeLocationModal';
@@ -49,7 +49,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -172,26 +172,6 @@ export default function EmployeesPage() {
 
     return () => clearInterval(timer);
   }, [navigate]);
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', String(newDarkMode));
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-    }
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const handleGoBack = () => {
-    navigate(-1);
-  };
 
   // Extraire les projets uniques
   useEffect(() => {
@@ -660,9 +640,6 @@ export default function EmployeesPage() {
       <div className="employees-header">
         <div className="header-top">
           <div className="header-left">
-            <button className="back-btn" onClick={handleGoBack} title="Retour">
-              <ChevronLeft size={24} />
-            </button>
             <div className="header-info">
               <h1>Gestion des employés</h1>
               <p className="current-date-time">{formatDateTime()}</p>
@@ -685,12 +662,14 @@ export default function EmployeesPage() {
                   borderRadius: '8px',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                   zIndex: 100,
-                  minWidth: '150px',
+                  minWidth: '160px',
                 }}>
                   <button
                     onClick={() => exportData('csv')}
                     style={{
-                      display: 'block',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
                       width: '100%',
                       padding: '0.75rem 1rem',
                       border: 'none',
@@ -699,17 +678,18 @@ export default function EmployeesPage() {
                       cursor: 'pointer',
                       color: darkMode ? '#e0e0e0' : '#2c3e50',
                       fontSize: '0.9rem',
-                      transition: 'background 0.2s ease',
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = darkMode ? '#3a3a52' : '#f5f5f5'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                   >
-                    📊 Exporter CSV
+                    <BarChart2 size={16} /> Exporter CSV
                   </button>
                   <button
                     onClick={() => exportData('pdf')}
                     style={{
-                      display: 'block',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
                       width: '100%',
                       padding: '0.75rem 1rem',
                       border: 'none',
@@ -718,13 +698,12 @@ export default function EmployeesPage() {
                       cursor: 'pointer',
                       color: darkMode ? '#e0e0e0' : '#2c3e50',
                       fontSize: '0.9rem',
-                      transition: 'background 0.2s ease',
                       borderTop: `1px solid ${darkMode ? '#4a4a6a' : '#e0e0e0'}`,
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = darkMode ? '#3a3a52' : '#f5f5f5'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                   >
-                    📋 Exporter PDF
+                    <FileText size={16} /> Exporter PDF
                   </button>
                 </div>
               )}
@@ -732,23 +711,6 @@ export default function EmployeesPage() {
             <button className="add-btn" onClick={handleOpenCreateModal} title="Ajouter un employé">
               <Plus size={20} />
               <span>Nouvel employé</span>
-            </button>
-            <div className="dark-mode-switch">
-              <input
-                type="checkbox"
-                id="dark-mode-toggle"
-                checked={darkMode}
-                onChange={toggleDarkMode}
-                className="switch-input"
-              />
-              <label htmlFor="dark-mode-toggle" className="switch-label">
-                <Moon size={16} className="moon-icon" />
-                <Sun size={16} className="sun-icon" />
-              </label>
-            </div>
-            <button className="logout-btn" onClick={handleLogout} title="Déconnexion">
-              <LogOut size={20} />
-              <span>Déconnexion</span>
             </button>
           </div>
         </div>
@@ -958,7 +920,7 @@ export default function EmployeesPage() {
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
             >
-              <ChevronLeftIcon size={18} />
+              <ChevronLeft size={18} />
               Précédent
             </button>
             <div className="pagination-info">
