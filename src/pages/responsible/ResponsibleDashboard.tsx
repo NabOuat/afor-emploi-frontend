@@ -528,7 +528,7 @@ export default function ResponsibleDashboard() {
             {[
               { label: 'CDI', value: stats?.cdi, icon: CheckCircle, color: '#27AE60' },
               { label: 'CDD', value: stats?.cdd, icon: Briefcase, color: '#3498DB' },
-              { label: 'Consultant', value: stats?.consultant, icon: User, color: '#9B59B6' },
+              { label: 'Consultant', value: stats?.consultant, icon: Users, color: '#9B59B6' },
               { label: 'Taux de Renouvellement', value: stats ? `${stats.tauxRenouvellement}%` : '--', icon: TrendingUp, color: '#F39C12' },
               { label: 'Ratio Permanent/Temp.', value: stats?.ratioPermanentTemporaire, icon: BarChart3, color: '#FF8C00' },
               { label: 'Durée Moy. Contrats', value: stats ? `${stats.dureemoyenneContrats} mois` : '--', icon: Clock, color: '#E74C3C' },
