@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRoute from './components/RoleBasedRoute';
+import SidebarLayout from './components/SidebarLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AforDashboard from './pages/afor/AforDashboard';
@@ -23,16 +24,58 @@ function App() {
           <Routes>
             <Route path="/" element={<LoginPage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/dashboard" element={<ProtectedRoute><RoleBasedRoute><DashboardPage /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/afor/dashboard" element={<ProtectedRoute><AforDashboard /></ProtectedRoute>} />
-            <Route path="/afor/settings" element={<ProtectedRoute><AforSettingsPage /></ProtectedRoute>} />
-            <Route path="/operator/dashboard" element={<ProtectedRoute><OperatorDashboard /></ProtectedRoute>} />
-            <Route path="/operator/settings" element={<ProtectedRoute><OperatorSettingsPage /></ProtectedRoute>} />
-            <Route path="/responsable/dashboard" element={<ProtectedRoute><ResponsibleDashboard /></ProtectedRoute>} />
-            <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/actors" element={<ProtectedRoute><ActorsManagement /></ProtectedRoute>} />
-            <Route path="/admin/projects" element={<ProtectedRoute><ProjectsManagement /></ProtectedRoute>} />
-            <Route path="/employees" element={<ProtectedRoute><EmployeesPage /></ProtectedRoute>} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <SidebarLayout>
+                  <RoleBasedRoute><DashboardPage /></RoleBasedRoute>
+                </SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/afor/dashboard" element={
+              <ProtectedRoute>
+                <SidebarLayout><AforDashboard /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/afor/settings" element={
+              <ProtectedRoute>
+                <SidebarLayout><AforSettingsPage /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/operator/dashboard" element={
+              <ProtectedRoute>
+                <SidebarLayout><OperatorDashboard /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/operator/settings" element={
+              <ProtectedRoute>
+                <SidebarLayout><OperatorSettingsPage /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/responsable/dashboard" element={
+              <ProtectedRoute>
+                <SidebarLayout><ResponsibleDashboard /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute>
+                <SidebarLayout><AdminDashboard /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/actors" element={
+              <ProtectedRoute>
+                <SidebarLayout><ActorsManagement /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/projects" element={
+              <ProtectedRoute>
+                <SidebarLayout><ProjectsManagement /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/employees" element={
+              <ProtectedRoute>
+                <SidebarLayout><EmployeesPage /></SidebarLayout>
+              </ProtectedRoute>
+            } />
           </Routes>
         </div>
       </Router>

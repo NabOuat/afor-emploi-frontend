@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Lock, Palette, Shield, X } from 'lucide-react';
+import { Save, Lock, Palette, Shield, X } from 'lucide-react';
 import '../../styles/SettingsPage.css';
 
 interface SettingsState {
@@ -17,7 +16,6 @@ interface PasswordChangeForm {
 }
 
 export default function SettingsPage() {
-  const navigate = useNavigate();
   const [settings, setSettings] = useState<SettingsState>({
     darkMode: false,
     notifications: true,
@@ -48,10 +46,6 @@ export default function SettingsPage() {
     localStorage.setItem('darkMode', String(settings.darkMode));
     setSaveMessage('Paramètres sauvegardés avec succès!');
     setTimeout(() => setSaveMessage(''), 3000);
-  };
-
-  const handleBack = () => {
-    navigate(-1);
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,9 +83,6 @@ export default function SettingsPage() {
   return (
     <div className={`settings-page ${settings.darkMode ? 'dark-mode' : ''}`}>
       <div className="settings-header">
-        <button className="back-btn" onClick={handleBack} title="Retour">
-          <ArrowLeft size={24} />
-        </button>
         <h1>Paramètres</h1>
       </div>
 

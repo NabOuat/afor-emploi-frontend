@@ -83,8 +83,18 @@
 }
 
 .form-error::before {
-  content: '⚠';
-  font-size: 0.9rem;
+  content: '!';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {

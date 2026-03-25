@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  LayoutDashboard, User, LogOut, Moon, Sun, Menu, X,
+  Moon, Sun,
   BarChart3, Users, Briefcase, MapPin, TrendingUp,
   AlertTriangle, Building2, ClipboardList, GraduationCap,
   Calendar, AlertCircle, CheckCircle, Clock, ChevronRight
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar,
@@ -76,10 +75,8 @@ interface ZoneNonCouverte {
 const CHART_COLORS = ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6', '#F39C12', '#1ABC9C'];
 
 export default function ResponsibleDashboard() {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout: _logout } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [filterContrats, setFilterContrats] = useState<'tous' | 'actifs' | 'inactifs'>('tous');
 
@@ -285,8 +282,6 @@ export default function ResponsibleDashboard() {
     document.documentElement.classList.toggle('dark-mode', next);
   };
 
-  const handleLogout = () => { logout(); navigate('/login'); };
-
   const genreData = stats ? [
     { name: 'Hommes', value: stats.hommes },
     { name: 'Femmes', value: stats.femmes },
@@ -314,40 +309,6 @@ export default function ResponsibleDashboard() {
 
   return (
     <div className={`rd-container ${darkMode ? 'dark' : ''}`}>
-      {/* Sidebar */}
-      <aside className={`rd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-        <div className="rd-sidebar-top">
-          <div className="rd-logo">
-            {sidebarOpen && <span className="rd-logo-text">AFOR</span>}
-            <button className="rd-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-          </div>
-
-          <nav className="rd-nav">
-            <button className="rd-nav-item active">
-              <LayoutDashboard size={20} />
-              {sidebarOpen && <span>Tableau de Bord</span>}
-            </button>
-            <button className="rd-nav-item" onClick={() => navigate('/profile')}>
-              <User size={20} />
-              {sidebarOpen && <span>Profil</span>}
-            </button>
-          </nav>
-        </div>
-
-        <div className="rd-sidebar-bottom">
-          <button className="rd-nav-item" onClick={toggleDarkMode}>
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-            {sidebarOpen && <span>{darkMode ? 'Mode Clair' : 'Mode Sombre'}</span>}
-          </button>
-          <button className="rd-nav-item rd-logout" onClick={handleLogout}>
-            <LogOut size={20} />
-            {sidebarOpen && <span>Déconnexion</span>}
-          </button>
-        </div>
-      </aside>
-
       {/* Main */}
       <main className="rd-main">
         {/* Header */}
@@ -372,7 +333,7 @@ export default function ResponsibleDashboard() {
         {/* KPI Row */}
         <section className="rd-kpi-grid">
           {kpiCards.map((k, i) => (
-            <div key={i} className="rd-kpi-card">
+            <div key={i} className="rd-kpi-card" style={{ '--kpi-color': k.color } as React.CSSProperties}>
               <div className="rd-kpi-icon" style={{ background: k.bg, color: k.color }}>
                 <k.icon size={22} />
               </div>

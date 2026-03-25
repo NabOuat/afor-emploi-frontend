@@ -1,11 +1,10 @@
 .employees-page {
-  min-height: 100vh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   padding: 2rem;
   transition: background 0.5s ease;
-  overflow-y: auto;
   overflow-x: hidden;
   animation: fadeIn 0.5s ease-out;
 }

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, Eye } from 'lucide-react';
-import AdminHeader from '../../components/AdminHeader';
 import '../../styles/ProjectsManagement.css';
 
 interface Project {
@@ -50,9 +49,7 @@ export default function ProjectsManagement() {
   };
 
   return (
-    <>
-      <AdminHeader />
-      <div className={`projects-management ${darkMode ? 'dark-mode' : ''}`}>
+    <div className={`projects-management ${darkMode ? 'dark-mode' : ''}`}>
         <div className="projects-header">
           <h1>Gestion des Projets</h1>
           <p>Suivez et gérez tous les projets en cours</p>
@@ -145,7 +142,6 @@ export default function ProjectsManagement() {
             <p>Total: {filteredProjects.length} projet(s)</p>
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }
