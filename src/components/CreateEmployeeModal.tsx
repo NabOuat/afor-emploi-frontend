@@ -306,7 +306,7 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
 
   const handleNextStep = () => {
     if (validateStep()) {
-      if (currentStep < 5) {
+      if (currentStep < 6) {
         setCurrentStep(currentStep + 1);
       }
     }
@@ -330,6 +330,9 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
         nom: formData.nom.toUpperCase(),
         prenom: formData.prenom,
         genre: formData.genre,
+        date_naissance: formData.dateNaissance || null,
+        contact: formData.contact || null,
+        matricule: formData.matricule || null,
         age: formData.age || 0,
         type_personne: formData.statutProfessionnel || null,
         qualification: formData.qualification ? normalizeText(formData.qualification) : null,
