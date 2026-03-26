@@ -1199,8 +1199,8 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
             </div>
           )}
 
-          {/* Step 5: Récapitulatif */}
-          {currentStep === 5 && (
+          {/* Step 6: Récapitulatif */}
+          {currentStep === 6 && (
             <div className="form-step recap-step">
               <h3>Récapitulatif</h3>
               <div className="recap-sections">

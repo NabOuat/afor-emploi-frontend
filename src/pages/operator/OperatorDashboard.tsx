@@ -7,11 +7,10 @@ import {
   PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler,
 } from 'chart.js';
 import ZoomPlugin from 'chartjs-plugin-zoom';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import '../../styles/OperatorDashboard.css';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler, ZoomPlugin, ChartDataLabels);
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler, ZoomPlugin);
 
 // ── Cache sessionStorage 5 minutes ─────────────────────────────────────────
 const CACHE_TTL = 5 * 60 * 1000;
@@ -237,10 +236,9 @@ export default function OperatorDashboard() {
   const gr = darkMode ? '#2a3448' : '#e8edf3';
 
   const statCards = [
-    { label: 'Total Employés',     value: stats?.total_employees || 0,                  icon: Users,       color: '#3498DB', description: 'Employés enregistrés' },
-    { label: 'Contrats Actifs',    value: stats?.active_contracts || 0,                 icon: CheckCircle, color: '#27AE60', description: 'Contrats en cours' },
-    { label: 'Employés > 25 ans',  value: stats?.young_employees_over_25 || 0,          icon: TrendingUp,  color: '#F39C12', description: 'Plus de 25 ans' },
-    { label: 'Durée Moy. Contrat', value: `${avgContractDuration?.average_months || 0}m`, icon: Clock,     color: '#E74C3C', description: 'Durée moyenne' },
+    { label: 'Total Employés',     value: stats?.total_employees || 0,         icon: Users,       color: '#3498DB', description: 'Employés enregistrés' },
+    { label: 'Contrats Actifs',    value: stats?.active_contracts || 0,        icon: CheckCircle, color: '#27AE60', description: 'Contrats en cours' },
+    { label: 'Employés > 25 ans',  value: stats?.young_employees_over_25 || 0, icon: TrendingUp,  color: '#F39C12', description: 'Plus de 25 ans' },
   ];
 
   const emptyChart = (label: string) => (
@@ -303,9 +301,8 @@ export default function OperatorDashboard() {
               <div className="chart-card">
                 <h3>Statut des Contrats</h3>
                 {contractStatus && (contractStatus.active + contractStatus.completed) > 0 ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 230 }}>
-                    <div style={{ position: 'relative', width: '100%', maxWidth: 280, height: 230 }}>
-                      <Doughnut
+                  <div style={{ position: 'relative', height: 230 }}>
+                    <Doughnut
                       data={{
                         labels: ['Actifs', 'Terminés'],
                         datasets: [{
@@ -323,17 +320,9 @@ export default function OperatorDashboard() {
                         plugins: {
                           legend: { position: 'bottom', labels: { color: tk, padding: 14, font: { size: 12 } } },
                           tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed} contrats` } },
-                          datalabels: {
-                            color: '#ffffff',
-                            font: { size: 16, weight: 'bold' },
-                            formatter: (value: number) => value,
-                            anchor: 'center',
-                            align: 'center',
-                          },
                         },
                       }}
-                      />
-                    </div>
+                    />
                   </div>
                 ) : emptyChart('contrats')}
               </div>
@@ -342,9 +331,8 @@ export default function OperatorDashboard() {
               <div className="chart-card">
                 <h3>Répartition par Genre</h3>
                 {employeesByGender.length > 0 ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 230 }}>
-                    <div style={{ position: 'relative', width: '100%', maxWidth: 280, height: 230 }}>
-                      <Doughnut
+                  <div style={{ position: 'relative', height: 230 }}>
+                    <Doughnut
                       data={{
                         labels: employeesByGender.map(g =>
                           g.gender === 'M' ? 'Hommes' : g.gender === 'F' ? 'Femmes' : g.gender),
@@ -370,17 +358,9 @@ export default function OperatorDashboard() {
                               },
                             },
                           },
-                          datalabels: {
-                            color: '#ffffff',
-                            font: { size: 16, weight: 'bold' },
-                            formatter: (value: number) => value,
-                            anchor: 'center',
-                            align: 'center',
-                          },
                         },
                       }}
-                      />
-                    </div>
+                    />
                   </div>
                 ) : emptyChart('genre')}
               </div>

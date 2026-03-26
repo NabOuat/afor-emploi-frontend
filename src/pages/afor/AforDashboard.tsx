@@ -7,11 +7,10 @@ import {
   PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler,
 } from 'chart.js';
 import ZoomPlugin from 'chartjs-plugin-zoom';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import '../../styles/AforDashboard.css';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler, ZoomPlugin, ChartDataLabels);
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler, ZoomPlugin);
 
 // ── Cache sessionStorage 5 minutes ─────────────────────────────────────────
 const CACHE_TTL = 5 * 60 * 1000;
@@ -250,10 +249,9 @@ export default function AforDashboard() {
   const gr = darkMode ? '#2a3448' : '#e8edf3';  // grille
 
   const statCards = [
-    { label: 'Total Employés',      value: stats?.total_employees || 0,                  icon: Users,       color: '#3498DB', description: 'Employés enregistrés' },
-    { label: 'Contrats Actifs',     value: stats?.active_contracts || 0,                 icon: CheckCircle, color: '#27AE60', description: 'Contrats en cours' },
-    { label: 'Employés > 25 ans',   value: stats?.young_employees_over_25 || 0,          icon: TrendingUp,  color: '#F39C12', description: 'Plus de 25 ans' },
-    { label: 'Durée Moy. Contrat',  value: `${avgContractDuration?.average_months || 0}m`, icon: Clock,     color: '#E74C3C', description: 'Durée moyenne' },
+    { label: 'Total Employés',      value: stats?.total_employees || 0,         icon: Users,       color: '#3498DB', description: 'Employés enregistrés' },
+    { label: 'Contrats Actifs',     value: stats?.active_contracts || 0,        icon: CheckCircle, color: '#27AE60', description: 'Contrats en cours' },
+    { label: 'Employés > 25 ans',   value: stats?.young_employees_over_25 || 0, icon: TrendingUp,  color: '#F39C12', description: 'Plus de 25 ans' },
   ];
 
   const emptyChart = (label: string) => (
@@ -330,7 +328,7 @@ export default function AforDashboard() {
                         </div>
                         <Doughnut
                           data={{ labels: ['Actifs', 'Terminés'], datasets: [{ data: [contractStatus.active, contractStatus.completed], backgroundColor: ['#27AE60', '#3498DB'], borderColor: darkMode ? '#1c2333' : '#ffffff', borderWidth: 3, hoverOffset: 12 }] }}
-                          options={{ responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed} contrats` } }, datalabels: { color: '#ffffff', font: { size: 14, weight: 'bold' }, formatter: (value: number) => value, anchor: 'center', align: 'center' } } }}
+                          options={{ responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed} contrats` } } } }}
                         />
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
@@ -365,7 +363,7 @@ export default function AforDashboard() {
                         </div>
                         <Doughnut
                           data={{ labels: gLabels, datasets: [{ data: employeesByGender.map(g => g.count), backgroundColor: gColors, borderColor: darkMode ? '#1c2333' : '#ffffff', borderWidth: 3, hoverOffset: 12 }] }}
-                          options={{ responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed} (${Math.round((c.parsed / gTotal) * 100)}%)` } }, datalabels: { color: '#ffffff', font: { size: 14, weight: 'bold' }, formatter: (value: number) => value, anchor: 'center', align: 'center' } } }}
+                          options={{ responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed} (${Math.round((c.parsed / gTotal) * 100)}%)` } } } }}
                         />
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
