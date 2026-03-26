@@ -94,19 +94,13 @@ export default function EmployeesPage() {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         const response = await fetch(`${apiUrl}/employees/list/${acteurId}`);
         
-        console.log('Réponse API:', response.status);
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Données brutes reçues:', data);
-          console.log('Type de données:', typeof data);
-          console.log('Est un array?', Array.isArray(data));
-          console.log('Longueur:', data?.length);
           
           if (data && Array.isArray(data) && data.length > 0) {
             // Transformer les données de l'API en Employee
             const transformedEmployees = data.map((emp: any) => {
-              console.log('Transformation employé - données brutes:', emp);
               
               const statut: 'Contractuel' | 'Fonctionnaire' = emp.type_personne === 'Fonctionnaire' ? 'Fonctionnaire' : 'Contractuel';
               const genre: 'M' | 'F' = (emp.genre === 'M' || emp.genre === 'F') ? emp.genre : 'M';
@@ -137,17 +131,11 @@ export default function EmployeesPage() {
                 projets: Array.isArray(emp.projets) ? emp.projets : [],
               };
               
-              console.log('Employé transformé:', transformed);
               return transformed;
             });
-            console.log('Employés transformés:', transformedEmployees);
-            console.log('Nombre d\'employés transformés:', transformedEmployees.length);
-            console.log('Avant setEmployees - employees state:', employees);
             setEmployees(transformedEmployees);
-            console.log('Après setEmployees - employees state:', transformedEmployees);
             setIsLoading(false);
           } else {
-            console.log('Aucun employé trouvé - data:', data);
             setEmployees([]);
             setIsLoading(false);
           }
@@ -234,12 +222,6 @@ export default function EmployeesPage() {
     setCurrentPage(1);
   };
 
-  // Logging pour diagnostiquer
-  console.log('Employees state:', employees);
-  console.log('Filtered employees:', filteredEmployees);
-  console.log('Current page:', currentPage);
-  console.log('Items per page:', itemsPerPage);
-  console.log('Current items:', currentItems);
 
   const handleViewEmployee = (employee: Employee) => {
     setSelectedEmployee(employee);
