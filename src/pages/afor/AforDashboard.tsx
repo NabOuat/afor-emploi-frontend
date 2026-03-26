@@ -401,7 +401,6 @@ export default function AforDashboard() {
                           plugins: {
                             legend: { display: false },
                             tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
-                            // @ts-expect-error zoom plugin
                             zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
                           },
                           scales: {
@@ -434,7 +433,6 @@ export default function AforDashboard() {
                           plugins: {
                             legend: { display: false },
                             tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
-                            // @ts-expect-error zoom plugin
                             zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
                           },
                           scales: {
@@ -467,7 +465,6 @@ export default function AforDashboard() {
                           plugins: {
                             legend: { display: false },
                             tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
-                            // @ts-expect-error zoom plugin
                             zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
                           },
                           scales: {
@@ -508,7 +505,6 @@ export default function AforDashboard() {
                       plugins: {
                         legend: { display: false },
                         tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} employés` } },
-                        // @ts-expect-error zoom plugin
                         zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
                       },
                       scales: {
@@ -553,7 +549,6 @@ export default function AforDashboard() {
                         plugins: {
                           legend: { display: false },
                           tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} embauches` } },
-                          // @ts-expect-error zoom plugin
                           zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
                         },
                         scales: {

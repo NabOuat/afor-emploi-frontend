@@ -521,7 +521,7 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
         </div>
 
         <div className="steps-indicator">
-          {[1, 2, 3, 4, 5].map((step) => (
+          {[1, 2, 3, 4, 5, 6].map((step) => (
             <div key={step} className={`step ${step === currentStep ? 'active' : ''} ${step < currentStep ? 'completed' : ''}`}>
               <span>{step}</span>
             </div>
@@ -529,7 +529,7 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
         </div>
         
         <div style={{ textAlign: 'center', fontSize: '0.9em', color: '#666', marginBottom: '20px' }}>
-          Étape {currentStep} sur 5
+          Étape {currentStep} sur 6
         </div>
 
         <div className="modal-body create-body">
@@ -1341,9 +1341,9 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
             Précédent
           </button>
           <div className="step-counter">
-            Étape {currentStep} sur 5
+            Étape {currentStep} sur 6
           </div>
-          {currentStep < 5 ? (
+          {currentStep < 6 ? (
             <button className="btn-next" onClick={handleNextStep} disabled={isLoading}>
               Suivant
               <ChevronRight size={18} />
