@@ -3,12 +3,36 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Clock, AlertCircle, Upload, Users, TrendingUp, Download, X, Loader } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
-  ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend
-} from 'recharts';
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement,
+  PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler,
+} from 'chart.js';
+import ZoomPlugin from 'chartjs-plugin-zoom';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import '../../styles/OperatorDashboard.css';
 
-const OP_COLORS = ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6', '#F39C12', '#1ABC9C'];
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler, ZoomPlugin, ChartDataLabels);
+
+// ── Cache sessionStorage 5 minutes ─────────────────────────────────────────
+const CACHE_TTL = 5 * 60 * 1000;
+function getCache(acteurId: string, filter: string) {
+  try {
+    const raw = sessionStorage.getItem(`op_dash_${acteurId}_${filter}`);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    return Date.now() - ts < CACHE_TTL ? data : null;
+  } catch { return null; }
+}
+function setCache(acteurId: string, filter: string, data: unknown) {
+  try {
+    sessionStorage.setItem(`op_dash_${acteurId}_${filter}`, JSON.stringify({ data, ts: Date.now() }));
+  } catch {}
+}
+function clearDashCache(acteurId: string) {
+  ['all', 'active'].forEach(f => sessionStorage.removeItem(`op_dash_${acteurId}_${f}`));
+}
+
+const C = ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6', '#F39C12', '#1ABC9C'];
 
 interface DashboardStats {
   total_employees: number;
@@ -55,12 +79,47 @@ export default function OperatorDashboard() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const applyData = useCallback((d: {
+    stats: DashboardStats;
+    employees_by_position: EmployeesByPosition[];
+    employees_by_zone: EmployeesByZone[];
+    contract_status: ContractStatus;
+    average_contract_duration: AverageContractDuration;
+    employees_by_project: EmployeesByProject[];
+    employees_by_gender: EmployeesByGender[];
+    age_statistics: AgeStatistics;
+    monthly_hires: MonthlyHire[];
+  }) => {
+    setStats(d.stats);
+    setEmployeesByPosition(d.employees_by_position);
+    setEmployeesByZone(d.employees_by_zone);
+    setContractStatus(d.contract_status);
+    setAvgContractDuration(d.average_contract_duration);
+    setEmployeesByProject(d.employees_by_project);
+    setEmployeesByGender(d.employees_by_gender);
+    setAgeStats(d.age_statistics);
+    setMonthlyHires(d.monthly_hires);
+  }, []);
+
   const fetchDashboardData = useCallback(async (acteurId: string, filter: string = 'all') => {
+    const cached = getCache(acteurId, filter);
+    if (cached) { applyData(cached); setIsLoading(false); return; }
+
     setIsLoading(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-      const [statsRes, posRes, zoneRes, contractRes, avgRes, projRes, genderRes, ageRes, hiresRes] = await Promise.all([
+      // ── Essai endpoint combiné (optimisé) ──────────────────────────────
+      const res = await fetch(`${apiUrl}/dashboard/operator/all/${acteurId}?filter_type=${filter}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCache(acteurId, filter, data);
+        applyData(data);
+        return;
+      }
+
+      // ── Fallback : 9 endpoints parallèles (ancien comportement) ────────
+      const [sR, pR, zR, cR, aR, prR, gR, agR, hR] = await Promise.all([
         fetch(`${apiUrl}/dashboard/operator/stats/${acteurId}?filter_type=${filter}`),
         fetch(`${apiUrl}/dashboard/operator/employees-by-position/${acteurId}?filter_type=${filter}`),
         fetch(`${apiUrl}/dashboard/operator/employees-by-zone/${acteurId}?filter_type=${filter}`),
@@ -71,58 +130,31 @@ export default function OperatorDashboard() {
         fetch(`${apiUrl}/dashboard/operator/age-statistics/${acteurId}?filter_type=${filter}`),
         fetch(`${apiUrl}/dashboard/operator/monthly-hires/${acteurId}?months=12`),
       ]);
-
-      if (statsRes.ok) {
-        const data = await statsRes.json();
-        console.log('Stats:', data);
-        setStats(data);
-      }
-      if (posRes.ok) {
-        const data = await posRes.json();
-        console.log('Employees by position:', data);
-        setEmployeesByPosition(data);
-      }
-      if (zoneRes.ok) {
-        const data = await zoneRes.json();
-        console.log('Employees by zone:', data);
-        setEmployeesByZone(data);
-      }
-      if (contractRes.ok) {
-        const data = await contractRes.json();
-        console.log('Contract status:', data);
-        setContractStatus(data);
-      }
-      if (avgRes.ok) {
-        const data = await avgRes.json();
-        console.log('Avg contract duration:', data);
-        setAvgContractDuration(data);
-      }
-      if (projRes.ok) {
-        const data = await projRes.json();
-        console.log('Employees by project:', data);
-        setEmployeesByProject(data);
-      }
-      if (genderRes.ok) {
-        const data = await genderRes.json();
-        console.log('Employees by gender:', data);
-        setEmployeesByGender(data);
-      }
-      if (ageRes.ok) {
-        const data = await ageRes.json();
-        console.log('Age stats:', data);
-        setAgeStats(data);
-      }
-      if (hiresRes.ok) {
-        const data = await hiresRes.json();
-        console.log('Monthly hires:', data);
-        setMonthlyHires(data);
-      }
+      const [sd, pd, zd, cd, ad, prd, gd, agd, hd] = await Promise.all([
+        sR.ok  ? sR.json()  : Promise.resolve(null),
+        pR.ok  ? pR.json()  : Promise.resolve([]),
+        zR.ok  ? zR.json()  : Promise.resolve([]),
+        cR.ok  ? cR.json()  : Promise.resolve(null),
+        aR.ok  ? aR.json()  : Promise.resolve(null),
+        prR.ok ? prR.json() : Promise.resolve([]),
+        gR.ok  ? gR.json()  : Promise.resolve([]),
+        agR.ok ? agR.json() : Promise.resolve(null),
+        hR.ok  ? hR.json()  : Promise.resolve([]),
+      ]);
+      const combined = {
+        stats: sd, employees_by_position: pd, employees_by_zone: zd,
+        contract_status: cd, average_contract_duration: ad,
+        employees_by_project: prd, employees_by_gender: gd,
+        age_statistics: agd, monthly_hires: hd,
+      };
+      setCache(acteurId, filter, combined);
+      applyData(combined);
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [applyData]);
 
   useEffect(() => {
     const token    = sessionStorage.getItem('token');
@@ -145,6 +177,7 @@ export default function OperatorDashboard() {
       document.documentElement.classList.remove('dark-mode');
     }
   }, [darkMode]);
+
 
   const handleDownloadTemplate = async () => {
     try {
@@ -187,13 +220,21 @@ export default function OperatorDashboard() {
       const result = await response.json();
       setImportProgress(result);
       setNotificationMessage(`${result.success}/${result.total} employés importés avec succès`);
-      if (acteurId) setTimeout(() => fetchDashboardData(acteurId, filterType), 1000);
+      if (acteurId) {
+        clearDashCache(acteurId);
+        const apiUrl2 = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        fetch(`${apiUrl2}/dashboard/operator/cache/${acteurId}`, { method: 'DELETE' }).catch(() => {});
+        setTimeout(() => fetchDashboardData(acteurId, filterType), 1000);
+      }
     } catch {
       setNotificationMessage("Erreur lors de l'import du fichier");
     } finally {
       setIsImporting(false);
     }
   };
+
+  const tk = darkMode ? '#8a98b0' : '#6b7a90';
+  const gr = darkMode ? '#2a3448' : '#e8edf3';
 
   const statCards = [
     { label: 'Total Employés',     value: stats?.total_employees || 0,                  icon: Users,       color: '#3498DB', description: 'Employés enregistrés' },
@@ -258,117 +299,219 @@ export default function OperatorDashboard() {
             {/* Charts */}
             <div className="charts-grid">
 
+              {/* 1 — Statut des Contrats */}
               <div className="chart-card">
                 <h3>Statut des Contrats</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {contractStatus && (contractStatus.active + contractStatus.completed) > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={[
-                          { name: 'Actifs',   value: contractStatus.active },
-                          { name: 'Terminés', value: contractStatus.completed },
-                        ]} cx="50%" cy="50%" outerRadius={80} dataKey="value"
-                          label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
-                          <Cell fill="#27AE60" /><Cell fill="#3498DB" />
-                        </Pie>
-                        <Tooltip /><Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('contrats')}
-                </div>
+                {contractStatus && (contractStatus.active + contractStatus.completed) > 0 ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 230 }}>
+                    <div style={{ position: 'relative', width: '100%', maxWidth: 280, height: 230 }}>
+                      <Doughnut
+                      data={{
+                        labels: ['Actifs', 'Terminés'],
+                        datasets: [{
+                          data: [contractStatus.active, contractStatus.completed],
+                          backgroundColor: ['#27AE60', '#3498DB'],
+                          borderColor: darkMode ? '#1c2333' : '#ffffff',
+                          borderWidth: 3,
+                          hoverOffset: 10,
+                        }],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '68%',
+                        plugins: {
+                          legend: { position: 'bottom', labels: { color: tk, padding: 14, font: { size: 12 } } },
+                          tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed} contrats` } },
+                          datalabels: {
+                            color: '#ffffff',
+                            font: { size: 16, weight: 'bold' },
+                            formatter: (value: number) => value,
+                            anchor: 'center',
+                            align: 'center',
+                          },
+                        },
+                      }}
+                      />
+                    </div>
+                  </div>
+                ) : emptyChart('contrats')}
               </div>
 
+              {/* 2 — Répartition par Genre */}
               <div className="chart-card">
                 <h3>Répartition par Genre</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {employeesByGender.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={employeesByGender.map(g => ({
-                          name: g.gender === 'M' ? 'Hommes' : g.gender === 'F' ? 'Femmes' : g.gender,
-                          value: g.count,
-                        }))} cx="50%" cy="50%" outerRadius={80} dataKey="value"
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                          {employeesByGender.map((_, i) => <Cell key={i} fill={OP_COLORS[i]} />)}
-                        </Pie>
-                        <Tooltip /><Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('genre')}
-                </div>
+                {employeesByGender.length > 0 ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 230 }}>
+                    <div style={{ position: 'relative', width: '100%', maxWidth: 280, height: 230 }}>
+                      <Doughnut
+                      data={{
+                        labels: employeesByGender.map(g =>
+                          g.gender === 'M' ? 'Hommes' : g.gender === 'F' ? 'Femmes' : g.gender),
+                        datasets: [{
+                          data: employeesByGender.map(g => g.count),
+                          backgroundColor: C.slice(0, employeesByGender.length),
+                          borderColor: darkMode ? '#1c2333' : '#ffffff',
+                          borderWidth: 3,
+                          hoverOffset: 10,
+                        }],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '68%',
+                        plugins: {
+                          legend: { position: 'bottom', labels: { color: tk, padding: 14, font: { size: 12 } } },
+                          tooltip: {
+                            callbacks: {
+                              label: (c) => {
+                                const tot = employeesByGender.reduce((s, g) => s + g.count, 0);
+                                return ` ${c.label}: ${c.parsed} (${Math.round((c.parsed / tot) * 100)}%)`;
+                              },
+                            },
+                          },
+                          datalabels: {
+                            color: '#ffffff',
+                            font: { size: 16, weight: 'bold' },
+                            formatter: (value: number) => value,
+                            anchor: 'center',
+                            align: 'center',
+                          },
+                        },
+                      }}
+                      />
+                    </div>
+                  </div>
+                ) : emptyChart('genre')}
               </div>
 
+              {/* 3 — Top 5 Postes */}
               <div className="chart-card">
                 <h3>Top 5 Postes</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {employeesByPosition.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={employeesByPosition.slice(0, 5)} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="position" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={v => [v, 'Employés']} />
-                        <Bar dataKey="count" fill="#FF8C00" radius={[4,4,0,0]} name="Employés" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('postes')}
-                </div>
+                {employeesByPosition.length > 0 ? (() => {
+                  const top5 = employeesByPosition.slice(0, 5);
+                  return (
+                    <div style={{ position: 'relative', height: 210 }}>
+                      <Bar
+                        data={{
+                          labels: top5.map(p => p.position.length > 22 ? p.position.slice(0, 22) + '…' : p.position),
+                          datasets: [{ label: 'Employés', data: top5.map(p => p.count), backgroundColor: C.slice(0, top5.length), borderRadius: 6, borderSkipped: false }],
+                        }}
+                        options={{
+                          indexAxis: 'y' as const,
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
+                          },
+                          scales: {
+                            x: { grid: { color: gr }, ticks: { color: tk } },
+                            y: { grid: { display: false }, ticks: { color: tk, font: { size: 11 } } },
+                          },
+                        }}
+                      />
+                    </div>
+                  );
+                })() : emptyChart('postes')}
               </div>
 
+              {/* 4 — Répartition par Projet */}
               <div className="chart-card">
                 <h3>Répartition par Projet</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {employeesByProject.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={employeesByProject.slice(0,5).map(p => ({ name: p.project_name.slice(0,12), count: p.count }))}
-                        margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={v => [v, 'Employés']} />
-                        <Bar dataKey="count" fill="#FF8C00" radius={[4,4,0,0]} name="Employés" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('projets')}
-                </div>
+                {employeesByProject.length > 0 ? (() => {
+                  const top5 = employeesByProject.slice(0, 5);
+                  return (
+                    <div style={{ position: 'relative', height: 210 }}>
+                      <Bar
+                        data={{
+                          labels: top5.map(p => p.project_name.length > 22 ? p.project_name.slice(0, 22) + '…' : p.project_name),
+                          datasets: [{ label: 'Employés', data: top5.map(p => p.count), backgroundColor: C.slice(0, top5.length), borderRadius: 6, borderSkipped: false }],
+                        }}
+                        options={{
+                          indexAxis: 'y' as const,
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
+                          },
+                          scales: {
+                            x: { grid: { color: gr }, ticks: { color: tk } },
+                            y: { grid: { display: false }, ticks: { color: tk, font: { size: 11 } } },
+                          },
+                        }}
+                      />
+                    </div>
+                  );
+                })() : emptyChart('projets')}
               </div>
 
+              {/* 5 — Employés par Zone */}
               <div className="chart-card">
                 <h3>Employés par Zone (Top 5)</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {employeesByZone.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={employeesByZone.slice(0,5).map(z => ({ zone: z.region.slice(0,10), count: z.count }))}
-                        margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="zone" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={v => [v, 'Employés']} />
-                        <Bar dataKey="count" fill="#27AE60" radius={[4,4,0,0]} name="Employés" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('zones')}
-                </div>
+                {employeesByZone.length > 0 ? (() => {
+                  const top5 = employeesByZone.slice(0, 5);
+                  return (
+                    <div style={{ position: 'relative', height: 210 }}>
+                      <Bar
+                        data={{
+                          labels: top5.map(z => z.region.length > 22 ? z.region.slice(0, 22) + '…' : z.region),
+                          datasets: [{ label: 'Employés', data: top5.map(z => z.count), backgroundColor: C.slice(0, top5.length), borderRadius: 6, borderSkipped: false }],
+                        }}
+                        options={{
+                          indexAxis: 'y' as const,
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
+                          },
+                          scales: {
+                            x: { grid: { color: gr }, ticks: { color: tk } },
+                            y: { grid: { display: false }, ticks: { color: tk, font: { size: 11 } } },
+                          },
+                        }}
+                      />
+                    </div>
+                  );
+                })() : emptyChart('zones')}
               </div>
 
+              {/* 6 — Groupes d'Âge */}
               <div className="chart-card">
                 <h3>Groupes d'Âge</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[
-                      { tranche: '18-25', count: ageStats?.age_groups?.['18-25'] || 0 },
-                      { tranche: '26-35', count: ageStats?.age_groups?.['26-35'] || 0 },
-                      { tranche: '36-45', count: ageStats?.age_groups?.['36-45'] || 0 },
-                      { tranche: '46-55', count: ageStats?.age_groups?.['46-55'] || 0 },
-                      { tranche: '56+',   count: ageStats?.age_groups?.['56+']   || 0 },
-                    ]} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="tranche" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={v => [v, 'Employés']} />
-                      <Bar dataKey="count" fill="#E74C3C" radius={[4,4,0,0]} name="Employés" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div style={{ position: 'relative', height: 190 }}>
+                  <Bar
+                    data={{
+                      labels: ['18-25', '26-35', '36-45', '46-55', '56+'],
+                      datasets: [{
+                        label: 'Employés',
+                        data: [
+                          ageStats?.age_groups?.['18-25'] || 0,
+                          ageStats?.age_groups?.['26-35'] || 0,
+                          ageStats?.age_groups?.['36-45'] || 0,
+                          ageStats?.age_groups?.['46-55'] || 0,
+                          ageStats?.age_groups?.['56+']   || 0,
+                        ],
+                        backgroundColor: ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6'],
+                        borderRadius: 6,
+                        borderSkipped: false,
+                      }],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} employés` } },
+                      },
+                      scales: {
+                        x: { grid: { display: false }, ticks: { color: tk } },
+                        y: { grid: { color: gr }, ticks: { color: tk } },
+                      },
+                    }}
+                  />
                 </div>
                 <div className="age-summary">
                   <span>Moy: <strong>{ageStats?.average_age || 0} ans</strong></span>
@@ -377,21 +520,43 @@ export default function OperatorDashboard() {
                 </div>
               </div>
 
+              {/* 7 — Embauches par Mois */}
               <div className="chart-card chart-card-wide">
                 <h3>Embauches par Mois (12 derniers mois)</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {monthlyHires.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={monthlyHires} margin={{ top: 5, right: 20, left: 0, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="month" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={v => [v, 'Embauches']} />
-                        <Bar dataKey="count" fill="#1ABC9C" radius={[4,4,0,0]} name="Embauches" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('embauches')}
-                </div>
+                {monthlyHires.length > 0 ? (
+                  <div style={{ position: 'relative', height: 230 }}>
+                    <Line
+                      data={{
+                        labels: monthlyHires.map(h => (h.month || '').slice(0, 7)),
+                        datasets: [{
+                          label: 'Embauches',
+                          data: monthlyHires.map(h => h.count),
+                          borderColor: '#FF8C00',
+                          backgroundColor: darkMode ? 'rgba(255,140,0,0.10)' : 'rgba(255,140,0,0.15)',
+                          fill: true,
+                          tension: 0.4,
+                          pointRadius: 5,
+                          pointHoverRadius: 9,
+                          pointBackgroundColor: '#FF8C00',
+                          pointBorderColor: darkMode ? '#1c2333' : '#ffffff',
+                          pointBorderWidth: 2,
+                        }],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: { display: false },
+                          tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} embauches` } },
+                        },
+                        scales: {
+                          x: { grid: { display: false }, ticks: { color: tk } },
+                          y: { grid: { color: gr }, ticks: { color: tk } },
+                        },
+                      }}
+                    />
+                  </div>
+                ) : emptyChart('embauches')}
               </div>
 
             </div>
