@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, Settings,
   LogOut, ChevronLeft, ChevronRight, Moon, Sun,
-  Building2, UserCheck, X,
+  Building2, X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
@@ -63,18 +63,47 @@ function getRoleLabel(actorType: string | null): string {
   }
 }
 
+const CHIBI_AVATARS = [
+  { id: 'chibi1', emoji: '🧑‍💼', bg: '#FF8C00' },
+  { id: 'chibi2', emoji: '👩‍💼', bg: '#3498DB' },
+  { id: 'chibi3', emoji: '🦁', bg: '#F39C12' },
+  { id: 'chibi4', emoji: '🐯', bg: '#E74C3C' },
+  { id: 'chibi5', emoji: '🦊', bg: '#27AE60' },
+  { id: 'chibi6', emoji: '🐻', bg: '#9B59B6' },
+  { id: 'chibi7', emoji: '🐼', bg: '#1ABC9C' },
+  { id: 'chibi8', emoji: '🦉', bg: '#34495E' },
+];
+
+function getInitials(username: string): string {
+  return username.slice(0, 2).toUpperCase();
+}
+
 export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const { user, actorType, logout } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [darkMode, setDarkMode]   = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('darkMode') === 'true';
     setDarkMode(saved);
     document.documentElement.classList.toggle('dark-mode', saved);
+    const savedAvatar = localStorage.getItem('user_avatar');
+    if (savedAvatar) setSelectedAvatar(savedAvatar);
   }, []);
+
+  const handleSelectAvatar = (avatarId: string | null) => {
+    setSelectedAvatar(avatarId);
+    if (avatarId) {
+      localStorage.setItem('user_avatar', avatarId);
+    } else {
+      localStorage.removeItem('user_avatar');
+    }
+    setShowAvatarPicker(false);
+  };
 
   const toggleDarkMode = () => {
     const next = !darkMode;
@@ -134,13 +163,60 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
       {/* User info */}
       {!collapsed && user && (
-        <div className="sidebar-user-info">
-          <div className="sidebar-user-avatar">
-            <UserCheck size={18} />
+        <div className="sidebar-user-info" style={{ position: 'relative' }}>
+          <div
+            className="sidebar-user-avatar"
+            onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+            style={{ cursor: 'pointer', fontSize: selectedAvatar ? '1.2rem' : '0.82rem', fontWeight: 700 }}
+            title="Changer d'avatar"
+          >
+            {selectedAvatar
+              ? CHIBI_AVATARS.find(a => a.id === selectedAvatar)?.emoji || getInitials(user.username)
+              : getInitials(user.username)
+            }
           </div>
           <div className="sidebar-user-text">
             <span className="sidebar-user-name">{user.username}</span>
             <span className="sidebar-user-role">{roleLabel}</span>
+          </div>
+
+          {showAvatarPicker && (
+            <div className="avatar-picker">
+              <p className="avatar-picker-title">Choisir un avatar</p>
+              <div className="avatar-picker-grid">
+                <button
+                  className={`avatar-option ${!selectedAvatar ? 'active' : ''}`}
+                  onClick={() => handleSelectAvatar(null)}
+                  title="Initiales"
+                >
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(user.username)}</span>
+                </button>
+                {CHIBI_AVATARS.map(a => (
+                  <button
+                    key={a.id}
+                    className={`avatar-option ${selectedAvatar === a.id ? 'active' : ''}`}
+                    onClick={() => handleSelectAvatar(a.id)}
+                    style={{ background: a.bg + '22' }}
+                  >
+                    <span style={{ fontSize: '1.2rem' }}>{a.emoji}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {collapsed && user && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
+          <div
+            className="sidebar-user-avatar"
+            title={user.username}
+            style={{ fontSize: selectedAvatar ? '1.2rem' : '0.82rem', fontWeight: 700 }}
+          >
+            {selectedAvatar
+              ? CHIBI_AVATARS.find(a => a.id === selectedAvatar)?.emoji || getInitials(user.username)
+              : getInitials(user.username)
+            }
           </div>
         </div>
       )}

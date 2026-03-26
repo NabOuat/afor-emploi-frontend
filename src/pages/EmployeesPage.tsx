@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Edit2, Plus, Users, CheckCircle, AlertCircle, TrendingDown, Download, ChevronLeft, ChevronRight, Eye, MapPin, RefreshCw, ArrowUp, ArrowDown, BarChart2, FileText } from 'lucide-react';
+import { Search, Edit2, Plus, Users, CheckCircle, Download, ChevronLeft, ChevronRight, Eye, MapPin, RefreshCw, ArrowUp, ArrowDown, BarChart2, FileText } from 'lucide-react';
 import EmployeeModal from '../components/EmployeeModal';
 import EditEmployeeModal from '../components/EditEmployeeModal';
 import ChangeLocationModal from '../components/ChangeLocationModal';
@@ -551,29 +551,6 @@ export default function EmployeesPage() {
   const maleCount = employees.filter((emp) => emp.genre === 'M').length;
   const femaleCount = employees.filter((emp) => emp.genre === 'F').length;
   const activeContracts = employees.filter((emp) => emp.validiteContrat === 'En cours').length;
-  
-  // Contrats expirant dans 30 jours (calcul réel basé sur date_fin)
-  const expiringContracts = employees.filter((emp) => {
-    if (!emp.date_fin || emp.validiteContrat !== 'En cours') return false;
-    const today = new Date();
-    const endDate = new Date(emp.date_fin);
-    const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return daysUntilExpiry > 0 && daysUntilExpiry <= 30;
-  }).length;
-  
-  // Ancienneté moyenne (en mois)
-  const avgTenure = employees.length > 0 
-    ? Math.round(
-        employees.reduce((sum, emp) => {
-          if (!emp.date_debut) return sum;
-          const today = new Date();
-          const startDate = new Date(emp.date_debut);
-          const months = (today.getFullYear() - startDate.getFullYear()) * 12 + 
-                        (today.getMonth() - startDate.getMonth());
-          return sum + months;
-        }, 0) / employees.length
-      )
-    : 0;
 
   const stats = [
     {
@@ -590,18 +567,6 @@ export default function EmployeesPage() {
       icon: CheckCircle,
       color: '#27AE60',
       value: activeContracts,
-    },
-    {
-      title: 'Contrats expirant (30j)',
-      icon: AlertCircle,
-      color: '#F39C12',
-      value: expiringContracts,
-    },
-    {
-      title: 'Ancienneté moyenne',
-      icon: TrendingDown,
-      color: '#3498DB',
-      value: `${avgTenure} mois`,
     },
   ];
 
@@ -699,7 +664,7 @@ export default function EmployeesPage() {
 
         <div className="stats-grid">
           {isLoading ? (
-            Array.from({ length: 4 }).map((_, index) => (
+            Array.from({ length: 2 }).map((_, index) => (
               <div key={index} className="stat-card-skeleton" />
             ))
           ) : (
