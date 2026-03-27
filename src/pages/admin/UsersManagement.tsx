@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Trash2, X, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle } from 'lucide-react';
+import authService from '../../services/authService';
 
 interface UserEntry {
   id: string;
@@ -55,7 +56,7 @@ export default function UsersManagement() {
     setLoading(true);
     try {
       const [ur, ar] = await Promise.all([
-        fetch(`${apiUrl}/api/auth/users`),
+        fetch(`${apiUrl}/api/auth/users`, { headers: { ...authService.getAuthHeader() } }),
         fetch(`${apiUrl}/api/acteurs`),
       ]);
       if (ur.ok) setUsers(await ur.json());
@@ -97,7 +98,7 @@ export default function UsersManagement() {
     try {
       const res = await fetch(`${apiUrl}/api/auth/users`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
         body: JSON.stringify(form),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); setFormError(e.detail || 'Erreur serveur.'); return; }
@@ -112,7 +113,7 @@ export default function UsersManagement() {
     if (!selected) return;
     setSaving(true);
     try {
-      await fetch(`${apiUrl}/api/auth/users/${selected.id}`, { method: 'DELETE' });
+      await fetch(`${apiUrl}/api/auth/users/${selected.id}`, { method: 'DELETE', headers: { ...authService.getAuthHeader() } });
       showToast('success', `"${selected.username}" supprimé.`);
       closeModal();
       fetchData();

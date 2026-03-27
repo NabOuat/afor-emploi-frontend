@@ -28,10 +28,11 @@ function getNavItems(actorType: string | null): NavItem[] {
         { label: 'Tableau de bord', path: '/admin/dashboard', icon: LayoutDashboard },
         { label: 'Acteurs',         path: '/admin/actors',    icon: Building2 },
         { label: 'Projets',         path: '/admin/projects',  icon: Briefcase },
-        { label: 'Utilisateurs',    path: '/admin/users',     icon: Settings },
+        { label: 'Utilisateurs',    path: '/admin/users',     icon: Users },
         { label: 'Zones',           path: '/admin/zones',     icon: Globe },
         { label: 'Géographie',      path: '/admin/geo',       icon: MapPin },
         { label: 'Employés',        path: '/employees',       icon: Users },
+        { label: 'Paramètres',      path: '/admin/settings',  icon: Settings },
       ];
     case 'AF':
       return [

@@ -17,6 +17,7 @@ import ProjectsManagement from './pages/admin/ProjectsManagement';
 import UsersManagement from './pages/admin/UsersManagement';
 import ZonesManagement from './pages/admin/ZonesManagement';
 import GeoManagement from './pages/admin/GeoManagement';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import EmployeesPage from './pages/EmployeesPage';
 import './App.css';
 
@@ -93,6 +94,11 @@ function App() {
             <Route path="/admin/geo" element={
               <ProtectedRoute>
                 <SidebarLayout><GeoManagement /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedRoute>
+                <SidebarLayout><AdminSettingsPage /></SidebarLayout>
               </ProtectedRoute>
             } />
             <Route path="/employees" element={
