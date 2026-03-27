@@ -3,9 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, Settings,
   LogOut, ChevronLeft, ChevronRight, Moon, Sun,
-  Building2, X,
+  Building2, X, Globe, MapPin,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDarkMode } from '../hooks/useDarkMode';
 import './Sidebar.css';
 
 interface NavItem {
@@ -27,7 +28,11 @@ function getNavItems(actorType: string | null): NavItem[] {
         { label: 'Tableau de bord', path: '/admin/dashboard', icon: LayoutDashboard },
         { label: 'Acteurs',         path: '/admin/actors',    icon: Building2 },
         { label: 'Projets',         path: '/admin/projects',  icon: Briefcase },
+        { label: 'Utilisateurs',    path: '/admin/users',     icon: Users },
+        { label: 'Zones',           path: '/admin/zones',     icon: Globe },
+        { label: 'Géographie',      path: '/admin/geo',       icon: MapPin },
         { label: 'Employés',        path: '/employees',       icon: Users },
+        { label: 'Paramètres',      path: '/admin/settings',  icon: Settings },
       ];
     case 'AF':
       return [
@@ -84,14 +89,11 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
   const navigate  = useNavigate();
   const location  = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const [darkMode, setDarkMode]   = useState(false);
+  const [darkMode, toggleDarkMode] = useDarkMode();
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(saved);
-    document.documentElement.classList.toggle('dark-mode', saved);
     const savedAvatar = localStorage.getItem('user_avatar');
     if (savedAvatar) setSelectedAvatar(savedAvatar);
   }, []);
@@ -104,13 +106,6 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       localStorage.removeItem('user_avatar');
     }
     setShowAvatarPicker(false);
-  };
-
-  const toggleDarkMode = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    localStorage.setItem('darkMode', String(next));
-    document.documentElement.classList.toggle('dark-mode', next);
   };
 
   const handleLogout = () => {

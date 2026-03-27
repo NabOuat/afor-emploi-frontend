@@ -9,6 +9,7 @@ import RenewContractModal from '../components/RenewContractModal';
 import CreateEmployeeModal from '../components/CreateEmployeeModal';
 import SkeletonLoader from '../components/SkeletonLoader';
 import '../styles/EmployeesPage.css';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 interface Projet {
   id: string;
@@ -51,7 +52,7 @@ export default function EmployeesPage() {
   const navigate = useNavigate();
   const { actorType } = useAuth();
   const isRespo = actorType === 'RESPO';
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode] = useDarkMode();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [currentPage, setCurrentPage] = useState(1);
@@ -80,9 +81,6 @@ export default function EmployeesPage() {
       return;
     }
     
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(savedDarkMode);
-
     // Récupérer les employés de l'utilisateur connecté
     const fetchEmployees = async () => {
       try {

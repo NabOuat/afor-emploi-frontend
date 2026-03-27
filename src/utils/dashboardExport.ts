@@ -26,6 +26,11 @@ const C = {
   mutedText:'718096',
 };
 
+// ─── Local type fixes for xlsx-js-style typings ──────────────────────────────
+// xlsx-js-style doesn't export Cell in its type definitions
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type XlsxCell = { v?: string | number; t?: string; s?: any; [k: string]: any };
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface ExportEmployee {
   nom: string; prenom: string; matricule: string;
@@ -61,7 +66,10 @@ const dateSlug = () => new Date().toISOString().slice(0, 10);
 const pctOf = (n: number, total: number) => total ? `${Math.round(n * 100 / total)}%` : '0%';
 
 function dlBlob(buf: ArrayBuffer | Uint8Array, mime: string, name: string) {
-  const b   = new Blob([buf], { type: mime });
+  const data: ArrayBuffer = buf instanceof Uint8Array
+    ? (buf.buffer as ArrayBuffer).slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+    : buf;
+  const b = new Blob([data], { type: mime });
   const url = URL.createObjectURL(b);
   const a   = document.createElement('a');
   a.href = url; a.download = name; a.click();
@@ -69,7 +77,10 @@ function dlBlob(buf: ArrayBuffer | Uint8Array, mime: string, name: string) {
 }
 
 // ─── xlsx-js-style cell constructors ─────────────────────────────────────────
-type CellStyle = XLSXStyle.CellStyle;
+// Augment CellStyle to allow `indent` in alignment (xlsx-js-style supports it at runtime)
+type CellStyle = Omit<XLSXStyle.CellStyle, 'alignment'> & {
+  alignment?: NonNullable<XLSXStyle.CellStyle['alignment']> & { indent?: number };
+};
 
 const border = (color = C.gray3): CellStyle['border'] => ({
   top:    { style: 'thin', color: { rgb: color } },
@@ -82,9 +93,9 @@ const border = (color = C.gray3): CellStyle['border'] => ({
 function c(
   v: string | number,
   style: Partial<CellStyle> = {},
-): XLSXStyle.Cell {
+): XlsxCell {
   const t = typeof v === 'number' ? 'n' : 's';
-  return { v, t, s: style } as XLSXStyle.Cell;
+  return { v, t, s: style } as XlsxCell;
 }
 
 // Style presets
@@ -175,7 +186,7 @@ const S = {
 
 // ─── Sheet builder helper ────────────────────────────────────────────────────
 function buildSheet(
-  rows: XLSXStyle.Cell[][],
+  rows: XlsxCell[][],
   colWidths: number[],
   rowHeights?: number[],
 ): XLSXStyle.WorkSheet {
@@ -204,7 +215,7 @@ function mr(r: number, c1: number, c2: number): XLSXStyle.Range {
 }
 
 // Empty styled cell (for merged cells padding)
-const EMPTY = (bg = C.white): XLSXStyle.Cell => ({ v: '', t: 's', s: { fill: { fgColor: { rgb: bg } } } } as XLSXStyle.Cell);
+const EMPTY = (bg = C.white): XlsxCell => ({ v: '', t: 's', s: { fill: { fgColor: { rgb: bg } } } } as XlsxCell);
 
 // ─── Employee table rows (reusable) ──────────────────────────────────────────
 const EMP_HEADERS = [
@@ -213,11 +224,11 @@ const EMP_HEADERS = [
 ];
 const EMP_WIDTHS = [12, 18, 16, 22, 14, 12, 20, 24, 8, 8, 7, 24, 28, 12, 12];
 
-function empHeaderRow(): XLSXStyle.Cell[] {
+function empHeaderRow(): XlsxCell[] {
   return EMP_HEADERS.map(h => c(h, S.header(C.navy)));
 }
 
-function empDataRow(e: ExportEmployee, ri: number): XLSXStyle.Cell[] {
+function empDataRow(e: ExportEmployee, ri: number): XlsxCell[] {
   const a = ri % 2 === 0 ? S.even : S.odd;
   return [
     c(e.matricule || '—', a('center')),
@@ -249,7 +260,7 @@ export async function exportToExcel(data: DashboardExportData): Promise<void> {
   // ── Sheet 1 : Couverture ────────────────────────────────────────────────
   {
     const ncols = 3;
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       // Title
       [c('DASHBOARD RH — VUE RESPONSABLE', S.title()), EMPTY(C.navy), EMPTY(C.navy)],
       [c('Système AFOR Emploi', { font: { sz: 11, color: { rgb: C.orange }, bold: true }, fill: { fgColor: { rgb: C.navy } }, alignment: { horizontal: 'left', indent: 1 } }), EMPTY(C.navy), EMPTY(C.navy)],
@@ -299,7 +310,7 @@ export async function exportToExcel(data: DashboardExportData): Promise<void> {
 
   // ── Sheet 2 : Effectif par Région ───────────────────────────────────────
   {
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       [c('EFFECTIF PAR RÉGION', S.subtitle()), EMPTY(C.orange), EMPTY(C.orange), EMPTY(C.orange)],
       [c('Région', S.header()), c('Effectif', S.header()), c('% du Total', S.header()), c('Visuel', S.header())],
       ...data.regions.map((r, i) => {
@@ -317,7 +328,7 @@ export async function exportToExcel(data: DashboardExportData): Promise<void> {
 
   // ── Sheet 3 : Genre ─────────────────────────────────────────────────────
   {
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       [c('RÉPARTITION PAR GENRE', S.subtitle()), EMPTY(C.orange), EMPTY(C.orange)],
       [c('Genre', S.header()), c('Nombre', S.header()), c('% du Total', S.header())],
       [c('Hommes', { ...S.even('left'), font: { bold: true, color: { rgb: C.blue }, sz: 10 } }), c(s.hommes, { ...S.even(), font: { bold: true, color: { rgb: C.blue }, sz: 11 } }), c(pctOf(s.hommes, s.total), S.even())],
@@ -332,7 +343,7 @@ export async function exportToExcel(data: DashboardExportData): Promise<void> {
 
   // ── Sheet 4 : Pyramide des Âges ─────────────────────────────────────────
   {
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       [c('PYRAMIDE DES ÂGES', S.subtitle()), EMPTY(C.orange), EMPTY(C.orange), EMPTY(C.orange)],
       [c('Tranche', S.header()), c('Nombre', S.header()), c('% du Total', S.header()), c('Visuel', S.header())],
       ...data.ages.map((a, i) => {
@@ -350,7 +361,7 @@ export async function exportToExcel(data: DashboardExportData): Promise<void> {
   // ── Sheet 5 : Types de Contrats ─────────────────────────────────────────
   {
     const contractColors: Record<string, string> = { CDI: C.green, CDD: C.blue, Consultant: C.purple };
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       [c('TYPES DE CONTRATS', S.subtitle()), EMPTY(C.orange), EMPTY(C.orange)],
       [c('Type de Contrat', S.header()), c('Nombre', S.header()), c('% du Total', S.header())],
       ...data.contrats.map((ct, i) => {
@@ -370,7 +381,7 @@ export async function exportToExcel(data: DashboardExportData): Promise<void> {
 
   // ── Sheet 6 : Embauches Mensuelles ──────────────────────────────────────
   {
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       [c('EMBAUCHES MENSUELLES (12 DERNIERS MOIS)', S.subtitle()), EMPTY(C.orange)],
       [c('Mois', S.header()), c("Nombre d'Embauches", S.header())],
       ...data.embauches.map((e, i) => {
@@ -386,7 +397,7 @@ export async function exportToExcel(data: DashboardExportData): Promise<void> {
 
   // ── Sheet 7 : Niveau d'Éducation ────────────────────────────────────────
   {
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       [c("NIVEAU D'ÉDUCATION", S.subtitle()), EMPTY(C.orange), EMPTY(C.orange), EMPTY(C.orange)],
       [c('Diplôme / Niveau', S.header()), c('Nombre', S.header()), c('% du Total', S.header()), c('Visuel', S.header())],
       ...data.education.map((e, i) => {
@@ -404,7 +415,7 @@ export async function exportToExcel(data: DashboardExportData): Promise<void> {
 
   // ── Sheet 8 : Alertes Contrats ──────────────────────────────────────────
   {
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       [c('ALERTES — CONTRATS ARRIVANT À ÉCHÉANCE', S.subtitle()), EMPTY(C.orange), EMPTY(C.orange)],
       [c('Échéance', S.header()), c('Nombre de Contrats', S.header()), c('Niveau d\'Urgence', S.header())],
       [c('Dans moins de 3 mois',  S.kpiLabel()), c(ce.dans3mois,  S.danger()),  c('CRITIQUE — Action immédiate',    S.even('left'))],
@@ -425,7 +436,7 @@ export async function exportToExcel(data: DashboardExportData): Promise<void> {
 
   // ── Sheet 9 : Liste Complète Employés ───────────────────────────────────
   {
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       [c(`LISTE COMPLÈTE DES EMPLOYÉS (${emps.length})`, S.subtitle()), ...Array(EMP_HEADERS.length - 1).fill(EMPTY(C.orange))],
       [c(`Filtres : ${filterLabel}`, { font: { italic: true, sz: 9, color: { rgb: C.mutedText } }, fill: { fgColor: { rgb: C.gray2 } }, alignment: { horizontal: 'left', indent: 1 } }), ...Array(EMP_HEADERS.length - 1).fill(EMPTY(C.gray2))],
       empHeaderRow(),
@@ -466,7 +477,7 @@ export async function exportSectionToExcel(data: SectionExportData): Promise<voi
     const fill = Array(nCols - 1).fill(null).map(() => EMPTY(C.orange));
     const fillNav = Array(nCols - 1).fill(null).map(() => EMPTY(C.navy));
 
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       [c(`${data.icon} ${data.title.toUpperCase()}`, S.title()), ...fillNav],
       [c(`Rapport AFOR Emploi — ${date}`, { font: { sz: 10, italic: true, color: { rgb: 'A0AABA' } }, fill: { fgColor: { rgb: C.navy } }, alignment: { horizontal: 'left', indent: 1 } }), ...fillNav],
       [c(`Filtres : ${data.filterLabel}`, { font: { sz: 9, italic: true, color: { rgb: '8A98B0' } }, fill: { fgColor: { rgb: C.navy } }, alignment: { horizontal: 'left', indent: 1 } }), ...fillNav],
@@ -497,7 +508,7 @@ export async function exportSectionToExcel(data: SectionExportData): Promise<voi
     const fill = Array(EMP_HEADERS.length - 1).fill(null).map(() => EMPTY(C.orange));
     const fillNav = Array(EMP_HEADERS.length - 1).fill(null).map(() => EMPTY(C.navy));
 
-    const rows: XLSXStyle.Cell[][] = [
+    const rows: XlsxCell[][] = [
       [c(`LISTE DES EMPLOYÉS — ${data.title.toUpperCase()} (${data.employees.length})`, S.title()), ...fillNav],
       [c(`Filtres : ${data.filterLabel}`, { font: { sz: 9, italic: true, color: { rgb: '8A98B0' } }, fill: { fgColor: { rgb: C.navy } }, alignment: { horizontal: 'left', indent: 1 } }), ...fillNav],
       [c(`Date : ${date}`, { font: { sz: 9, italic: true, color: { rgb: '8A98B0' } }, fill: { fgColor: { rgb: C.navy } }, alignment: { horizontal: 'left', indent: 1 } }), ...fillNav],

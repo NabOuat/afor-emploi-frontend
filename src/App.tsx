@@ -14,6 +14,10 @@ import OperatorSettingsPage from './pages/operator/SettingsPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ActorsManagement from './pages/admin/ActorsManagement';
 import ProjectsManagement from './pages/admin/ProjectsManagement';
+import UsersManagement from './pages/admin/UsersManagement';
+import ZonesManagement from './pages/admin/ZonesManagement';
+import GeoManagement from './pages/admin/GeoManagement';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import EmployeesPage from './pages/EmployeesPage';
 import './App.css';
 
@@ -75,6 +79,26 @@ function App() {
             <Route path="/admin/projects" element={
               <ProtectedRoute>
                 <SidebarLayout><ProjectsManagement /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute>
+                <SidebarLayout><UsersManagement /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/zones" element={
+              <ProtectedRoute>
+                <SidebarLayout><ZonesManagement /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/geo" element={
+              <ProtectedRoute>
+                <SidebarLayout><GeoManagement /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedRoute>
+                <SidebarLayout><AdminSettingsPage /></SidebarLayout>
               </ProtectedRoute>
             } />
             <Route path="/employees" element={

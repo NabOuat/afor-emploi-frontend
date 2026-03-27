@@ -14,6 +14,7 @@ import {
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import '../../styles/ResponsibleDashboard.css';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement,
@@ -47,7 +48,7 @@ interface ProjetOption { id: string; nom: string; nom_complet: string; }
 
 export default function ResponsibleDashboard() {
   const { logout: _logout, user } = useAuth();
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, toggleDarkMode] = useDarkMode();
   const [loading, setLoading] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -64,16 +65,6 @@ export default function ResponsibleDashboard() {
   const [searchText, setSearchText] = useState('');
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-
-  // ── Dark mode ───────────────────────────────────────────────
-  useEffect(() => {
-    const saved = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(saved);
-    document.documentElement.classList.toggle('dark-mode', saved);
-  }, []);
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark-mode', darkMode);
-  }, [darkMode]);
 
   // ── Close export dropdown on outside click ──────────────────
   useEffect(() => {
@@ -406,13 +397,6 @@ export default function ResponsibleDashboard() {
     // ── Full exports ──────────────────────────────────────────
     excel: () => exportToExcel(buildExportData()).catch(console.error),
     pptx:  () => exportToPowerPoint(buildExportData()).catch(console.error),
-  };
-
-  // ── UI helpers ──────────────────────────────────────────────
-  const toggleDarkMode = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    localStorage.setItem('darkMode', String(next));
   };
 
   const todayStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
