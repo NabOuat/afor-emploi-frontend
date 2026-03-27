@@ -104,7 +104,7 @@ export default function AdminDashboard() {
 
   const projectData = (dashData?.employees_by_project || []).slice(0, 8).map(p => ({ name: p.project_name, value: p.count }));
 
-  const username = user?.username || 'Administrateur';
+  const displayName = user?.nom && user?.prenom ? `${user.prenom} ${user.nom}` : user?.username || 'Administrateur';
 
   return (
     <div className={`admin-dashboard ${darkMode ? 'dark-mode' : ''}`}>
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
 
       <div className="admin-content">
         <div className="welcome-section">
-          <h2>Bienvenue {username}</h2>
+          <h2>Bienvenue {displayName}</h2>
         </div>
 
         {loading ? (

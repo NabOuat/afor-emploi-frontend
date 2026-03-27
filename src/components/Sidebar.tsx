@@ -176,7 +176,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
             }
           </div>
           <div className="sidebar-user-text">
-            <span className="sidebar-user-name">{user.username}</span>
+            <span className="sidebar-user-name">{user.nom && user.prenom ? `${user.prenom} ${user.nom}` : user.username}</span>
             <span className="sidebar-user-role">{roleLabel}</span>
           </div>
 
