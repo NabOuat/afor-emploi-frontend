@@ -45,6 +45,7 @@ function getNavItems(actorType: string | null): NavItem[] {
       return [
         { label: 'Tableau de bord', path: '/responsable/dashboard', icon: LayoutDashboard },
         { label: 'Employés',        path: '/employees',             icon: Users },
+        { label: 'Paramètres',      path: '/responsable/settings',  icon: Settings },
       ];
     default:
       return [

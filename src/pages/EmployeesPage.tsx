@@ -49,7 +49,8 @@ type SortOrder = 'asc' | 'desc';
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
-  useAuth();
+  const { actorType } = useAuth();
+  const isRespo = actorType === 'RESPO';
   const [darkMode, setDarkMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -92,7 +93,10 @@ export default function EmployeesPage() {
         }
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-        const response = await fetch(`${apiUrl}/employees/list/${acteurId}`);
+        const url = isRespo
+          ? `${apiUrl}/employees/list-all`
+          : `${apiUrl}/employees/list/${acteurId}`;
+        const response = await fetch(url);
         
         
         if (response.ok) {
@@ -271,7 +275,10 @@ export default function EmployeesPage() {
         if (!acteurId) return;
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-        const response = await fetch(`${apiUrl}/employees/list/${acteurId}`);
+        const url = isRespo
+          ? `${apiUrl}/employees/list-all`
+          : `${apiUrl}/employees/list/${acteurId}`;
+        const response = await fetch(url);
         
         if (response.ok) {
           const data = await response.json();
@@ -655,10 +662,12 @@ export default function EmployeesPage() {
                 </div>
               )}
             </div>
-            <button className="add-btn" onClick={handleOpenCreateModal} title="Ajouter un employé">
-              <Plus size={20} />
-              <span>Nouvel employé</span>
-            </button>
+            {!isRespo && (
+              <button className="add-btn" onClick={handleOpenCreateModal} title="Ajouter un employé">
+                <Plus size={20} />
+                <span>Nouvel employé</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -835,13 +844,17 @@ export default function EmployeesPage() {
                     <button className="action-btn view-btn" onClick={() => handleViewEmployee(employee)} title="Voir détails">
                       <Eye size={16} />
                     </button>
-                    <button className="action-btn edit-btn" onClick={() => handleEditEmployee(employee)} title="Modifier">
-                      <Edit2 size={16} />
-                    </button>
-                    <button className="action-btn location-btn" onClick={() => handleChangeLocation(employee)} title="Changer localisation">
-                      <MapPin size={16} />
-                    </button>
-                    {employee.validiteContrat === 'Expiré' && (
+                    {!isRespo && (
+                      <button className="action-btn edit-btn" onClick={() => handleEditEmployee(employee)} title="Modifier">
+                        <Edit2 size={16} />
+                      </button>
+                    )}
+                    {!isRespo && (
+                      <button className="action-btn location-btn" onClick={() => handleChangeLocation(employee)} title="Changer localisation">
+                        <MapPin size={16} />
+                      </button>
+                    )}
+                    {!isRespo && employee.validiteContrat === 'Expiré' && (
                       <button className="action-btn renew-btn" onClick={() => handleRenewContract(employee)} title="Reconduire contrat">
                         <RefreshCw size={16} />
                       </button>
