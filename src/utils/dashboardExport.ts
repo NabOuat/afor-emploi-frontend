@@ -63,7 +63,7 @@ const pctOf = (n: number, total: number) => total ? `${Math.round(n * 100 / tota
 function dlBlob(buf: ArrayBuffer | Uint8Array, mime: string, name: string) {
   // Convertir Uint8Array en ArrayBuffer si nécessaire pour BlobPart
   const data = buf instanceof Uint8Array ? buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) : buf;
-  const b   = new Blob([data], { type: mime });
+  const b   = new Blob([data as ArrayBuffer], { type: mime });
   const url = URL.createObjectURL(b);
   const a   = document.createElement('a');
   a.href = url; a.download = name; a.click();

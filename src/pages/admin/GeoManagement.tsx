@@ -179,7 +179,7 @@ export default function GeoManagement() {
       <div style={{ display: 'flex', gap: 4, marginBottom: 18 }}>
         {(Object.keys(TAB_LABELS) as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
-            padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
+            padding: '8px 18px', borderRadius: 8, cursor: 'pointer',
             fontWeight: 600, fontSize: '0.88rem', transition: 'all 0.15s',
             background: tab === t ? '#2980B9' : '#fff',
             color: tab === t ? '#fff' : '#6b7a90',
