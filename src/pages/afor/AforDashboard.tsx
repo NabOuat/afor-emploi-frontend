@@ -3,12 +3,35 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, Users, TrendingUp, Download, X, CheckCircle, Clock, AlertCircle, Loader } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
-  ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend
-} from 'recharts';
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement,
+  PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler,
+} from 'chart.js';
+import ZoomPlugin from 'chartjs-plugin-zoom';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import '../../styles/AforDashboard.css';
 
-const AFOR_COLORS = ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6', '#F39C12', '#1ABC9C'];
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler, ZoomPlugin);
+
+// ── Cache sessionStorage 5 minutes ─────────────────────────────────────────
+const CACHE_TTL = 5 * 60 * 1000;
+function getCache(acteurId: string, filter: string) {
+  try {
+    const raw = sessionStorage.getItem(`afor_dash_${acteurId}_${filter}`);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    return Date.now() - ts < CACHE_TTL ? data : null;
+  } catch { return null; }
+}
+function setCache(acteurId: string, filter: string, data: unknown) {
+  try {
+    sessionStorage.setItem(`afor_dash_${acteurId}_${filter}`, JSON.stringify({ data, ts: Date.now() }));
+  } catch {}
+}
+function clearDashCache(acteurId: string) {
+  ['all', 'active'].forEach(f => sessionStorage.removeItem(`afor_dash_${acteurId}_${f}`));
+}
+
+const C = ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6', '#F39C12', '#1ABC9C'];
 
 interface DashboardStats {
   total_employees: number;
@@ -60,13 +83,54 @@ export default function AforDashboard() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const applyData = useCallback((d: {
+    stats: DashboardStats;
+    employees_by_position: EmployeesByPosition[];
+    employees_by_zone: EmployeesByZone[];
+    contract_status: ContractStatus;
+    average_contract_duration: AverageContractDuration;
+    employees_by_project: EmployeesByProject[];
+    employees_by_gender: EmployeesByGender[];
+    age_statistics: AgeStatistics;
+    monthly_hires: MonthlyHire[];
+  }) => {
+    setStats(d.stats);
+    setEmployeesByPosition(d.employees_by_position);
+    setEmployeesByZone(d.employees_by_zone);
+    setContractStatus(d.contract_status);
+    setAvgContractDuration(d.average_contract_duration);
+    setEmployeesByProject(d.employees_by_project);
+    setEmployeesByGender(d.employees_by_gender);
+    setAgeStats(d.age_statistics);
+    setMonthlyHires(d.monthly_hires);
+  }, []);
+
   const fetchDashboardData = useCallback(async (filter: string = 'all') => {
+    const acteurId = sessionStorage.getItem('acteur_id');
+    if (!acteurId) return;
+
+    const cached = getCache(acteurId, filter);
+    if (cached) { applyData(cached); setIsLoading(false); return; }
+
     setIsLoading(true);
     try {
-      const apiUrl   = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const acteurId = sessionStorage.getItem('acteur_id');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const url = `${apiUrl}/dashboard/operator/all/${acteurId}?filter_type=${filter}`;
+      console.log('[AFOR fetch] → envoi requête:', url);
 
-      const [statsRes, posRes, zoneRes, contractRes, avgRes, projRes, genderRes, ageRes, hiresRes] = await Promise.all([
+      // ── Essai endpoint combiné (optimisé) ──────────────────────────────
+      const res = await fetch(url);
+      console.log('[AFOR fetch] ← statut HTTP:', res.status, res.ok ? 'OK' : 'ERREUR');
+      if (res.ok) {
+        const data = await res.json();
+        console.log('[AFOR fetch] ← données reçues (clés):', Object.keys(data));
+        setCache(acteurId, filter, data);
+        applyData(data);
+        return;
+      }
+
+      // ── Fallback : 9 endpoints parallèles (ancien comportement) ────────
+      const [sR, pR, zR, cR, aR, prR, gR, agR, hR] = await Promise.all([
         fetch(`${apiUrl}/dashboard/operator/stats/${acteurId}?filter_type=${filter}`),
         fetch(`${apiUrl}/dashboard/operator/employees-by-position/${acteurId}?filter_type=${filter}`),
         fetch(`${apiUrl}/dashboard/operator/employees-by-zone/${acteurId}?filter_type=${filter}`),
@@ -77,22 +141,31 @@ export default function AforDashboard() {
         fetch(`${apiUrl}/dashboard/operator/age-statistics/${acteurId}?filter_type=${filter}`),
         fetch(`${apiUrl}/dashboard/operator/monthly-hires/${acteurId}?months=12`),
       ]);
-
-      if (statsRes.ok)    setStats(await statsRes.json());
-      if (posRes.ok)      setEmployeesByPosition(await posRes.json());
-      if (zoneRes.ok)     setEmployeesByZone(await zoneRes.json());
-      if (contractRes.ok) setContractStatus(await contractRes.json());
-      if (avgRes.ok)      setAvgContractDuration(await avgRes.json());
-      if (projRes.ok)     setEmployeesByProject(await projRes.json());
-      if (genderRes.ok)   setEmployeesByGender(await genderRes.json());
-      if (ageRes.ok)      setAgeStats(await ageRes.json());
-      if (hiresRes.ok)    setMonthlyHires(await hiresRes.json());
+      const [sd, pd, zd, cd, ad, prd, gd, agd, hd] = await Promise.all([
+        sR.ok  ? sR.json()  : Promise.resolve(null),
+        pR.ok  ? pR.json()  : Promise.resolve([]),
+        zR.ok  ? zR.json()  : Promise.resolve([]),
+        cR.ok  ? cR.json()  : Promise.resolve(null),
+        aR.ok  ? aR.json()  : Promise.resolve(null),
+        prR.ok ? prR.json() : Promise.resolve([]),
+        gR.ok  ? gR.json()  : Promise.resolve([]),
+        agR.ok ? agR.json() : Promise.resolve(null),
+        hR.ok  ? hR.json()  : Promise.resolve([]),
+      ]);
+      const combined = {
+        stats: sd, employees_by_position: pd, employees_by_zone: zd,
+        contract_status: cd, average_contract_duration: ad,
+        employees_by_project: prd, employees_by_gender: gd,
+        age_statistics: agd, monthly_hires: hd,
+      };
+      setCache(acteurId, filter, combined);
+      applyData(combined);
     } catch (error) {
-      console.error('Erreur chargement dashboard:', error);
+      console.error('[AFOR fetch] EXCEPTION:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [applyData]);
 
   useEffect(() => {
     const token    = sessionStorage.getItem('token');
@@ -115,6 +188,7 @@ export default function AforDashboard() {
       document.documentElement.classList.remove('dark-mode');
     }
   }, [darkMode]);
+
 
   const handleDownloadTemplate = async () => {
     try {
@@ -157,6 +231,11 @@ export default function AforDashboard() {
       const result = await response.json();
       setImportProgress(result);
       setNotificationMessage(`${result.success}/${result.total} employés importés avec succès`);
+      if (acteurId) {
+        clearDashCache(acteurId);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        fetch(`${apiUrl}/dashboard/operator/cache/${acteurId}`, { method: 'DELETE' }).catch(() => {});
+      }
       setTimeout(() => fetchDashboardData(filterType), 1000);
     } catch {
       setNotificationMessage('Erreur lors de l\'import du fichier');
@@ -165,11 +244,14 @@ export default function AforDashboard() {
     }
   };
 
+  // Couleurs Chart.js adaptées au dark mode
+  const tk = darkMode ? '#8a98b0' : '#6b7a90';  // texte axes
+  const gr = darkMode ? '#2a3448' : '#e8edf3';  // grille
+
   const statCards = [
-    { label: 'Total Employés',      value: stats?.total_employees || 0,                  icon: Users,       color: '#3498DB', description: 'Employés enregistrés' },
-    { label: 'Contrats Actifs',     value: stats?.active_contracts || 0,                 icon: CheckCircle, color: '#27AE60', description: 'Contrats en cours' },
-    { label: 'Employés > 25 ans',   value: stats?.young_employees_over_25 || 0,          icon: TrendingUp,  color: '#F39C12', description: 'Plus de 25 ans' },
-    { label: 'Durée Moy. Contrat',  value: `${avgContractDuration?.average_months || 0}m`, icon: Clock,     color: '#E74C3C', description: 'Durée moyenne' },
+    { label: 'Total Employés',      value: stats?.total_employees || 0,         icon: Users,       color: '#3498DB', description: 'Employés enregistrés' },
+    { label: 'Contrats Actifs',     value: stats?.active_contracts || 0,        icon: CheckCircle, color: '#27AE60', description: 'Contrats en cours' },
+    { label: 'Employés > 25 ans',   value: stats?.young_employees_over_25 || 0, icon: TrendingUp,  color: '#F39C12', description: 'Plus de 25 ans' },
   ];
 
   const emptyChart = (label: string) => (
@@ -228,123 +310,209 @@ export default function AforDashboard() {
             {/* Charts */}
             <div className="charts-grid">
 
-              {/* Statut des contrats */}
+              {/* 1 — Statut des Contrats */}
               <div className="chart-card">
                 <h3>Statut des Contrats</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {contractStatus && (contractStatus.active + contractStatus.completed) > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={[
-                          { name: 'Actifs',   value: contractStatus.active },
-                          { name: 'Terminés', value: contractStatus.completed },
-                        ]} cx="50%" cy="50%" outerRadius={80} dataKey="value"
-                          label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
-                          <Cell fill="#27AE60" /><Cell fill="#3498DB" />
-                        </Pie>
-                        <Tooltip /><Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('contrats')}
-                </div>
+                {contractStatus && (contractStatus.active + contractStatus.completed) > 0 ? (() => {
+                  const csTotal = contractStatus.active + contractStatus.completed;
+                  const csItems = [
+                    { label: 'Actifs', value: contractStatus.active, color: '#27AE60' },
+                    { label: 'Terminés', value: contractStatus.completed, color: '#3498DB' },
+                  ];
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '0.5rem 0' }}>
+                      <div style={{ position: 'relative', height: 160, width: 160, flexShrink: 0 }}>
+                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -52%)', textAlign: 'center', pointerEvents: 'none', zIndex: 1 }}>
+                          <div style={{ fontSize: '1.7rem', fontWeight: 700, color: darkMode ? '#e8edf3' : '#1a2332', lineHeight: 1 }}>{csTotal}</div>
+                          <div style={{ fontSize: '0.65rem', color: '#8a98b0', marginTop: 2 }}>Total</div>
+                        </div>
+                        <Doughnut
+                          data={{ labels: ['Actifs', 'Terminés'], datasets: [{ data: [contractStatus.active, contractStatus.completed], backgroundColor: ['#27AE60', '#3498DB'], borderColor: darkMode ? '#1c2333' : '#ffffff', borderWidth: 3, hoverOffset: 12 }] }}
+                          options={{ responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed} contrats` } } } }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                        {csItems.map((item, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: item.color, flexShrink: 0 }} />
+                            <div>
+                              <div style={{ fontSize: '1.65rem', fontWeight: 700, color: darkMode ? '#e8edf3' : '#1a2332', lineHeight: 1 }}>{item.value}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#8a98b0', marginTop: 3 }}>{item.label}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })() : emptyChart('contrats')}
               </div>
 
-              {/* Répartition par Genre */}
+              {/* 2 — Répartition par Genre */}
               <div className="chart-card">
                 <h3>Répartition par Genre</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {employeesByGender.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={employeesByGender.map(g => ({
-                          name: g.gender === 'M' ? 'Hommes' : g.gender === 'F' ? 'Femmes' : g.gender,
-                          value: g.count,
-                        }))} cx="50%" cy="50%" outerRadius={80} dataKey="value"
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                          {employeesByGender.map((_, i) => <Cell key={i} fill={AFOR_COLORS[i]} />)}
-                        </Pie>
-                        <Tooltip /><Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('genre')}
-                </div>
+                {employeesByGender.length > 0 ? (() => {
+                  const gTotal = employeesByGender.reduce((s, g) => s + g.count, 0);
+                  const gLabels = employeesByGender.map(g => g.gender === 'M' ? 'Hommes' : g.gender === 'F' ? 'Femmes' : g.gender);
+                  const gColors = C.slice(0, employeesByGender.length);
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '0.5rem 0' }}>
+                      <div style={{ position: 'relative', height: 160, width: 160, flexShrink: 0 }}>
+                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -52%)', textAlign: 'center', pointerEvents: 'none', zIndex: 1 }}>
+                          <div style={{ fontSize: '1.7rem', fontWeight: 700, color: darkMode ? '#e8edf3' : '#1a2332', lineHeight: 1 }}>{gTotal}</div>
+                          <div style={{ fontSize: '0.65rem', color: '#8a98b0', marginTop: 2 }}>Total</div>
+                        </div>
+                        <Doughnut
+                          data={{ labels: gLabels, datasets: [{ data: employeesByGender.map(g => g.count), backgroundColor: gColors, borderColor: darkMode ? '#1c2333' : '#ffffff', borderWidth: 3, hoverOffset: 12 }] }}
+                          options={{ responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed} (${Math.round((c.parsed / gTotal) * 100)}%)` } } } }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                        {employeesByGender.map((g, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: gColors[i], flexShrink: 0 }} />
+                            <div>
+                              <div style={{ fontSize: '1.65rem', fontWeight: 700, color: darkMode ? '#e8edf3' : '#1a2332', lineHeight: 1 }}>{g.count}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#8a98b0', marginTop: 3 }}>{gLabels[i]} · {Math.round(g.percentage)}%</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })() : emptyChart('genre')}
               </div>
 
-              {/* Top 5 Postes */}
+              {/* 3 — Top 5 Postes */}
               <div className="chart-card">
-                <h3>Top 5 Postes</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {employeesByPosition.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={employeesByPosition.slice(0, 5)} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="position" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={v => [v, 'Employés']} />
-                        <Bar dataKey="count" fill="#FF8C00" radius={[4,4,0,0]} name="Employés" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('postes')}
-                </div>
+                <h3>Top 5 Postes <span style={{ fontSize: '0.65rem', color: '#8a98b0', fontWeight: 400, textTransform: 'none' }}>— scroll pour zoomer · glisser pour déplacer</span></h3>
+                {employeesByPosition.length > 0 ? (() => {
+                  const top5 = employeesByPosition.slice(0, 5);
+                  return (
+                    <div style={{ position: 'relative', height: 210 }}>
+                      <Bar
+                        data={{
+                          labels: top5.map(p => p.position.length > 22 ? p.position.slice(0, 22) + '…' : p.position),
+                          datasets: [{ label: 'Employés', data: top5.map(p => p.count), backgroundColor: C.slice(0, top5.length), borderRadius: 6, borderSkipped: false }],
+                        }}
+                        options={{
+                          indexAxis: 'y' as const,
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
+                            zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
+                          },
+                          scales: {
+                            x: { grid: { color: gr }, ticks: { color: tk } },
+                            y: { grid: { display: false }, ticks: { color: tk, font: { size: 11 } } },
+                          },
+                        }}
+                      />
+                    </div>
+                  );
+                })() : emptyChart('postes')}
               </div>
 
-              {/* Répartition par Projet */}
+              {/* 4 — Répartition par Projet */}
               <div className="chart-card">
-                <h3>Répartition par Projet</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {employeesByProject.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={employeesByProject.slice(0,5).map(p => ({ name: p.project_name.slice(0,12), count: p.count }))}
-                        margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={v => [v, 'Employés']} />
-                        <Bar dataKey="count" fill="#FF8C00" radius={[4,4,0,0]} name="Employés" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('projets')}
-                </div>
+                <h3>Répartition par Projet <span style={{ fontSize: '0.65rem', color: '#8a98b0', fontWeight: 400, textTransform: 'none' }}>— scroll · glisser</span></h3>
+                {employeesByProject.length > 0 ? (() => {
+                  const top5 = employeesByProject.slice(0, 5);
+                  return (
+                    <div style={{ position: 'relative', height: 210 }}>
+                      <Bar
+                        data={{
+                          labels: top5.map(p => p.project_name.length > 22 ? p.project_name.slice(0, 22) + '…' : p.project_name),
+                          datasets: [{ label: 'Employés', data: top5.map(p => p.count), backgroundColor: C.slice(0, top5.length), borderRadius: 6, borderSkipped: false }],
+                        }}
+                        options={{
+                          indexAxis: 'y' as const,
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
+                            zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
+                          },
+                          scales: {
+                            x: { grid: { color: gr }, ticks: { color: tk } },
+                            y: { grid: { display: false }, ticks: { color: tk, font: { size: 11 } } },
+                          },
+                        }}
+                      />
+                    </div>
+                  );
+                })() : emptyChart('projets')}
               </div>
 
-              {/* Employés par Zone */}
+              {/* 5 — Employés par Zone */}
               <div className="chart-card">
-                <h3>Employés par Zone (Top 5)</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {employeesByZone.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={employeesByZone.slice(0,5).map(z => ({ zone: z.region.slice(0,10), count: z.count }))}
-                        margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="zone" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={v => [v, 'Employés']} />
-                        <Bar dataKey="count" fill="#27AE60" radius={[4,4,0,0]} name="Employés" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('zones')}
-                </div>
+                <h3>Employés par Zone (Top 5) <span style={{ fontSize: '0.65rem', color: '#8a98b0', fontWeight: 400, textTransform: 'none' }}>— scroll · glisser</span></h3>
+                {employeesByZone.length > 0 ? (() => {
+                  const top5 = employeesByZone.slice(0, 5);
+                  return (
+                    <div style={{ position: 'relative', height: 210 }}>
+                      <Bar
+                        data={{
+                          labels: top5.map(z => z.region.length > 22 ? z.region.slice(0, 22) + '…' : z.region),
+                          datasets: [{ label: 'Employés', data: top5.map(z => z.count), backgroundColor: C.slice(0, top5.length), borderRadius: 6, borderSkipped: false }],
+                        }}
+                        options={{
+                          indexAxis: 'y' as const,
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
+                            zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
+                          },
+                          scales: {
+                            x: { grid: { color: gr }, ticks: { color: tk } },
+                            y: { grid: { display: false }, ticks: { color: tk, font: { size: 11 } } },
+                          },
+                        }}
+                      />
+                    </div>
+                  );
+                })() : emptyChart('zones')}
               </div>
 
-              {/* Groupes d'Âge */}
+              {/* 6 — Groupes d'Âge */}
               <div className="chart-card">
-                <h3>Groupes d'Âge</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[
-                      { tranche: '18-25', count: ageStats?.age_groups?.['18-25'] || 0 },
-                      { tranche: '26-35', count: ageStats?.age_groups?.['26-35'] || 0 },
-                      { tranche: '36-45', count: ageStats?.age_groups?.['36-45'] || 0 },
-                      { tranche: '46-55', count: ageStats?.age_groups?.['46-55'] || 0 },
-                      { tranche: '56+',   count: ageStats?.age_groups?.['56+']   || 0 },
-                    ]} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="tranche" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={v => [v, 'Employés']} />
-                      <Bar dataKey="count" fill="#E74C3C" radius={[4,4,0,0]} name="Employés" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <h3>Groupes d'Âge <span style={{ fontSize: '0.65rem', color: '#8a98b0', fontWeight: 400, textTransform: 'none' }}>— scroll · glisser</span></h3>
+                <div style={{ position: 'relative', height: 190 }}>
+                  <Bar
+                    data={{
+                      labels: ['18-25', '26-35', '36-45', '46-55', '56+'],
+                      datasets: [{
+                        label: 'Employés',
+                        data: [
+                          ageStats?.age_groups?.['18-25'] || 0,
+                          ageStats?.age_groups?.['26-35'] || 0,
+                          ageStats?.age_groups?.['36-45'] || 0,
+                          ageStats?.age_groups?.['46-55'] || 0,
+                          ageStats?.age_groups?.['56+']   || 0,
+                        ],
+                        backgroundColor: ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6'],
+                        borderRadius: 6,
+                        borderSkipped: false,
+                      }],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} employés` } },
+                        zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
+                      },
+                      scales: {
+                        x: { grid: { display: false }, ticks: { color: tk } },
+                        y: { grid: { color: gr }, ticks: { color: tk } },
+                      },
+                    }}
+                  />
                 </div>
                 <div className="age-summary">
                   <span>Moy: <strong>{ageStats?.average_age || 0} ans</strong></span>
@@ -353,22 +521,44 @@ export default function AforDashboard() {
                 </div>
               </div>
 
-              {/* Embauches par Mois */}
+              {/* 7 — Embauches par Mois */}
               <div className="chart-card chart-card-wide">
-                <h3>Embauches par Mois (12 derniers mois)</h3>
-                <div style={{ width: '100%', height: 220 }}>
-                  {monthlyHires.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={monthlyHires} margin={{ top: 5, right: 20, left: 0, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="month" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={v => [v, 'Embauches']} />
-                        <Bar dataKey="count" fill="#1ABC9C" radius={[4,4,0,0]} name="Embauches" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : emptyChart('embauches')}
-                </div>
+                <h3>Embauches par Mois (12 derniers mois) <span style={{ fontSize: '0.65rem', color: '#8a98b0', fontWeight: 400, textTransform: 'none' }}>— scroll pour zoomer · glisser pour déplacer</span></h3>
+                {monthlyHires.length > 0 ? (
+                  <div style={{ position: 'relative', height: 230 }}>
+                    <Line
+                      data={{
+                        labels: monthlyHires.map(h => (h.month || '').slice(0, 7)),
+                        datasets: [{
+                          label: 'Embauches',
+                          data: monthlyHires.map(h => h.count),
+                          borderColor: '#FF8C00',
+                          backgroundColor: darkMode ? 'rgba(255,140,0,0.10)' : 'rgba(255,140,0,0.15)',
+                          fill: true,
+                          tension: 0.4,
+                          pointRadius: 5,
+                          pointHoverRadius: 9,
+                          pointBackgroundColor: '#FF8C00',
+                          pointBorderColor: darkMode ? '#1c2333' : '#ffffff',
+                          pointBorderWidth: 2,
+                        }],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: { display: false },
+                          tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} embauches` } },
+                          zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
+                        },
+                        scales: {
+                          x: { grid: { display: false }, ticks: { color: tk } },
+                          y: { grid: { color: gr }, ticks: { color: tk } },
+                        },
+                      }}
+                    />
+                  </div>
+                ) : emptyChart('embauches')}
               </div>
 
             </div>

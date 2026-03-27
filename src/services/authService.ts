@@ -16,6 +16,8 @@ export interface LoginResponse {
 export interface User {
   id: string;
   username: string;
+  nom?: string;
+  prenom?: string;
   acteur_id: string;
   actor_type?: string;
 }
@@ -97,6 +99,8 @@ class AuthService {
     sessionStorage.setItem(this.tokenKey, data.access_token);
     sessionStorage.setItem(this.userKey, JSON.stringify({
       username: data.username,
+      nom: data.nom,
+      prenom: data.prenom,
       actor_type: data.actor_type,
       acteur_id: data.acteur_id,
     }));

@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage';
 import AforDashboard from './pages/afor/AforDashboard';
 import OperatorDashboard from './pages/operator/OperatorDashboard';
 import ResponsibleDashboard from './pages/responsible/ResponsibleDashboard';
+import ResponsibleSettingsPage from './pages/responsible/SettingsPage';
 import AforSettingsPage from './pages/afor/SettingsPage';
 import OperatorSettingsPage from './pages/operator/SettingsPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -54,6 +55,11 @@ function App() {
             <Route path="/responsable/dashboard" element={
               <ProtectedRoute>
                 <SidebarLayout><ResponsibleDashboard /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/responsable/settings" element={
+              <ProtectedRoute>
+                <SidebarLayout><ResponsibleSettingsPage /></SidebarLayout>
               </ProtectedRoute>
             } />
             <Route path="/admin/dashboard" element={

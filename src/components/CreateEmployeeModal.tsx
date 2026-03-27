@@ -306,7 +306,7 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
 
   const handleNextStep = () => {
     if (validateStep()) {
-      if (currentStep < 5) {
+      if (currentStep < 6) {
         setCurrentStep(currentStep + 1);
       }
     }
@@ -330,6 +330,9 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
         nom: formData.nom.toUpperCase(),
         prenom: formData.prenom,
         genre: formData.genre,
+        date_naissance: formData.dateNaissance || null,
+        contact: formData.contact || null,
+        matricule: formData.matricule || null,
         age: formData.age || 0,
         type_personne: formData.statutProfessionnel || null,
         qualification: formData.qualification ? normalizeText(formData.qualification) : null,
@@ -521,7 +524,7 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
         </div>
 
         <div className="steps-indicator">
-          {[1, 2, 3, 4, 5].map((step) => (
+          {[1, 2, 3, 4, 5, 6].map((step) => (
             <div key={step} className={`step ${step === currentStep ? 'active' : ''} ${step < currentStep ? 'completed' : ''}`}>
               <span>{step}</span>
             </div>
@@ -529,7 +532,7 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
         </div>
         
         <div style={{ textAlign: 'center', fontSize: '0.9em', color: '#666', marginBottom: '20px' }}>
-          Étape {currentStep} sur 5
+          Étape {currentStep} sur 6
         </div>
 
         <div className="modal-body create-body">
@@ -1199,8 +1202,8 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
             </div>
           )}
 
-          {/* Step 5: Récapitulatif */}
-          {currentStep === 5 && (
+          {/* Step 6: Récapitulatif */}
+          {currentStep === 6 && (
             <div className="form-step recap-step">
               <h3>Récapitulatif</h3>
               <div className="recap-sections">
@@ -1341,9 +1344,9 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
             Précédent
           </button>
           <div className="step-counter">
-            Étape {currentStep} sur 5
+            Étape {currentStep} sur 6
           </div>
-          {currentStep < 5 ? (
+          {currentStep < 6 ? (
             <button className="btn-next" onClick={handleNextStep} disabled={isLoading}>
               Suivant
               <ChevronRight size={18} />

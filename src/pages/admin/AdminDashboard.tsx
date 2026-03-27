@@ -1,28 +1,40 @@
 import { useState, useEffect } from 'react';
-import { Users, Briefcase, TrendingUp, Download } from 'lucide-react';
+import { Users, Briefcase, TrendingUp, Download, Loader, FolderOpen } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/AdminDashboard.css';
 
-interface DashboardStats {
-  totalActeurs: number;
-  totalPersonnel: number;
-  employesActifs: number;
-  darkMode: boolean;
+interface AdminStats {
+  total_acteurs: number;
+  total_personnel: number;
+  employes_actifs: number;
+  total_projets: number;
+  acteurs_par_type: Record<string, number>;
 }
 
-export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalActeurs: 17,
-    totalPersonnel: 1287,
-    employesActifs: 1127,
-    darkMode: false,
-  });
+interface DashboardData {
+  stats: { total_employees: number; active_contracts: number; young_employees_over_25: number; };
+  employees_by_position: { position: string; count: number }[];
+  employees_by_zone: { region: string; departement: string; count: number }[];
+  employees_by_gender: { gender: string; count: number; percentage: number }[];
+  age_statistics: { average_age: number; min_age: number; max_age: number; age_groups: Record<string, number> };
+  employees_by_project: { project_id: string; project_name: string; count: number }[];
+  monthly_hires: { month: string; count: number }[];
+}
 
+const COLORS = ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6', '#F39C12', '#1ABC9C'];
+
+export default function AdminDashboard() {
+  const { user } = useAuth();
+  const [darkMode, setDarkMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
+  const [dashData, setDashData] = useState<DashboardData | null>(null);
   const [activeChart, setActiveChart] = useState('region');
 
   useEffect(() => {
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setStats(prev => ({ ...prev, darkMode: savedDarkMode }));
+    setDarkMode(savedDarkMode);
     if (savedDarkMode) {
       document.documentElement.classList.add('dark-mode');
     } else {
@@ -31,63 +43,71 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (stats.darkMode) {
+    if (darkMode) {
       document.documentElement.classList.add('dark-mode');
     } else {
       document.documentElement.classList.remove('dark-mode');
     }
-  }, [stats.darkMode]);
+  }, [darkMode]);
 
-  const regionData = [
-    { name: 'Cascades', value: 180 },
-    { name: 'Centre', value: 220 },
-    { name: 'Centre-Est', value: 150 },
-    { name: 'Centre-Nord', value: 140 },
-    { name: 'Centre-Ouest', value: 160 },
-    { name: 'Est', value: 130 },
-    { name: 'Hauts-Bassins', value: 190 },
-    { name: 'Nord', value: 170 },
-  ];
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const evolutionData = [
-    { mois: 'Jan', employes: 950 },
-    { mois: 'Fév', employes: 1000 },
-    { mois: 'Mar', employes: 1050 },
-    { mois: 'Avr', employes: 1090 },
-    { mois: 'Mai', employes: 1120 },
-    { mois: 'Juin', employes: 1127 },
-  ];
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const [adminRes, dashRes] = await Promise.all([
+        fetch(`${apiUrl}/dashboard/admin/stats`),
+        fetch(`${apiUrl}/dashboard/operator/all/global`),
+      ]);
+      if (adminRes.ok) setAdminStats(await adminRes.json());
+      if (dashRes.ok) setDashData(await dashRes.json());
+    } catch (err) {
+      console.error('Erreur chargement admin dashboard:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const genreData = [
-    { name: 'Hommes', value: 680 },
-    { name: 'Femmes', value: 447 },
-  ];
+  const regionData = (dashData?.employees_by_zone || [])
+    .reduce<{ name: string; value: number }[]>((acc, z) => {
+      const existing = acc.find(r => r.name === z.region);
+      if (existing) existing.value += z.count;
+      else acc.push({ name: z.region, value: z.count });
+      return acc;
+    }, [])
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
 
-  const ageData = [
-    { tranche: '18-25', count: 150 },
-    { tranche: '26-35', count: 380 },
-    { tranche: '36-45', count: 420 },
-    { tranche: '46-55', count: 140 },
-    { tranche: '56+', count: 37 },
-  ];
+  const deptData = (dashData?.employees_by_zone || [])
+    .map(z => ({ name: z.departement, value: z.count }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
 
-  const posteData = [
-    { nom: 'Opérateur', count: 450 },
-    { nom: 'Superviseur', count: 280 },
-    { nom: 'Coordinateur', count: 220 },
-    { nom: 'Gestionnaire', count: 177 },
-  ];
+  const genreData = (dashData?.employees_by_gender || []).map(g => ({
+    name: g.gender === 'M' ? 'Hommes' : g.gender === 'F' ? 'Femmes' : g.gender,
+    value: g.count,
+  }));
 
-  const diplomeData = [
-    { nom: 'Bac', count: 320 },
-    { nom: 'Licence', count: 580 },
-    { nom: 'Master', count: 227 },
-  ];
+  const ageData = dashData?.age_statistics
+    ? Object.entries(dashData.age_statistics.age_groups).map(([tranche, count]) => ({ tranche, count }))
+    : [];
 
-  const COLORS = ['#FF8C00', '#FFB84D', '#E67E00', '#FF6B35', '#FF9D3D', '#FFD580'];
+  const posteData = (dashData?.employees_by_position || []).slice(0, 6).map(p => ({ nom: p.position, count: p.count }));
+
+  const hiresData = (dashData?.monthly_hires || []).map(h => {
+    const d = new Date(h.month + '-01');
+    return { mois: d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }), count: h.count };
+  });
+
+  const projectData = (dashData?.employees_by_project || []).slice(0, 8).map(p => ({ name: p.project_name, value: p.count }));
+
+  const displayName = user?.nom && user?.prenom ? `${user.prenom} ${user.nom}` : user?.username || 'Administrateur';
 
   return (
-    <div className={`admin-dashboard ${stats.darkMode ? 'dark-mode' : ''}`}>
+    <div className={`admin-dashboard ${darkMode ? 'dark-mode' : ''}`}>
       <div className="admin-header">
         <div className="admin-header-top">
           <h1>Tableau de Bord Administrateur</h1>
@@ -96,241 +116,216 @@ export default function AdminDashboard() {
             <span className="timestamp">Mise à jour: {new Date().toLocaleTimeString('fr-FR')}</span>
           </div>
         </div>
-
       </div>
 
       <div className="admin-content">
         <div className="welcome-section">
-          <h2>Bienvenue Nabaga Ouattara</h2>
+          <h2>Bienvenue {displayName}</h2>
         </div>
 
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon actors">
-              <Users size={32} />
-            </div>
-            <div className="stat-info">
-              <h3>Total Acteurs</h3>
-              <p className="stat-number">{stats.totalActeurs}</p>
-              <span className="stat-desc">Opérateurs, Écoles, Agences</span>
-            </div>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+            <Loader size={36} style={{ animation: 'spin 1s linear infinite' }} />
           </div>
-
-          <div className="stat-card">
-            <div className="stat-icon personnel">
-              <Briefcase size={32} />
-            </div>
-            <div className="stat-info">
-              <h3>Total Personnel</h3>
-              <p className="stat-number">{stats.totalPersonnel}</p>
-              <span className="stat-desc">Tous les employés</span>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon active">
-              <TrendingUp size={32} />
-            </div>
-            <div className="stat-info">
-              <h3>Employés Actifs</h3>
-              <p className="stat-number">{stats.employesActifs}</p>
-              <span className="stat-desc">En poste actuellement</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="charts-section">
-          <div className="charts-header">
-            <h2>Analyses et Statistiques</h2>
-            <div className="charts-controls">
-              <span>Afficher:</span>
-              <button 
-                className={`chart-btn ${activeChart === 'region' ? 'active' : ''}`}
-                onClick={() => setActiveChart('region')}
-              >
-                Répartition par Région
-              </button>
-              <button 
-                className={`chart-btn ${activeChart === 'departement' ? 'active' : ''}`}
-                onClick={() => setActiveChart('departement')}
-              >
-                Répartition par Département
-              </button>
-              <button 
-                className={`chart-btn ${activeChart === 'sousprefecture' ? 'active' : ''}`}
-                onClick={() => setActiveChart('sousprefecture')}
-              >
-                Répartition par Sous-Préfecture
-              </button>
-              <button 
-                className={`chart-btn ${activeChart === 'evolution' ? 'active' : ''}`}
-                onClick={() => setActiveChart('evolution')}
-              >
-                Évolution des Effectifs
-              </button>
-              <button 
-                className={`chart-btn ${activeChart === 'genre' ? 'active' : ''}`}
-                onClick={() => setActiveChart('genre')}
-              >
-                Répartition par Genre
-              </button>
-              <button 
-                className={`chart-btn ${activeChart === 'age' ? 'active' : ''}`}
-                onClick={() => setActiveChart('age')}
-              >
-                Tranches d'Âge
-              </button>
-              <button 
-                className={`chart-btn ${activeChart === 'poste' ? 'active' : ''}`}
-                onClick={() => setActiveChart('poste')}
-              >
-                Répartition par Poste
-              </button>
-              <button 
-                className={`chart-btn ${activeChart === 'diplome' ? 'active' : ''}`}
-                onClick={() => setActiveChart('diplome')}
-              >
-                Répartition par Diplôme
-              </button>
-            </div>
-          </div>
-
-          <div className="charts-grid">
-            {activeChart === 'region' && (
-              <div className="chart-container">
-                <h3>Répartition par Région</h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={regionData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#FF8C00" />
-                  </BarChart>
-                </ResponsiveContainer>
+        ) : (
+          <>
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-icon actors">
+                  <Users size={32} />
+                </div>
+                <div className="stat-info">
+                  <h3>Total Acteurs</h3>
+                  <p className="stat-number">{adminStats?.total_acteurs ?? '--'}</p>
+                  <span className="stat-desc">Opérateurs, Écoles, Agences</span>
+                </div>
               </div>
-            )}
 
-            {activeChart === 'evolution' && (
-              <div className="chart-container">
-                <h3>Évolution des Effectifs</h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <LineChart data={evolutionData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="mois" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="employes" stroke="#FF8C00" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
+              <div className="stat-card">
+                <div className="stat-icon personnel">
+                  <Briefcase size={32} />
+                </div>
+                <div className="stat-info">
+                  <h3>Total Personnel</h3>
+                  <p className="stat-number">{adminStats?.total_personnel ?? '--'}</p>
+                  <span className="stat-desc">Tous les employés</span>
+                </div>
               </div>
-            )}
 
-            {activeChart === 'genre' && (
-              <div className="chart-container">
-                <h3>Répartition par Genre</h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <PieChart>
-                    <Pie
-                      data={genreData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={120}
-                      fill="#8884d8"
-                      dataKey="value"
+              <div className="stat-card">
+                <div className="stat-icon active">
+                  <TrendingUp size={32} />
+                </div>
+                <div className="stat-info">
+                  <h3>Employés Actifs</h3>
+                  <p className="stat-number">{adminStats?.employes_actifs ?? '--'}</p>
+                  <span className="stat-desc">En poste actuellement</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="charts-section">
+              <div className="charts-header">
+                <h2>Analyses et Statistiques</h2>
+                <div className="charts-controls">
+                  <span>Afficher:</span>
+                  {[
+                    { key: 'region', label: 'Par Région' },
+                    { key: 'departement', label: 'Par Département' },
+                    { key: 'projet', label: 'Par Projet' },
+                    { key: 'evolution', label: 'Embauches' },
+                    { key: 'genre', label: 'Par Genre' },
+                    { key: 'age', label: "Tranches d'Âge" },
+                    { key: 'poste', label: 'Par Poste' },
+                  ].map(btn => (
+                    <button
+                      key={btn.key}
+                      className={`chart-btn ${activeChart === btn.key ? 'active' : ''}`}
+                      onClick={() => setActiveChart(btn.key)}
                     >
-                      {genreData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
 
-            {activeChart === 'age' && (
-              <div className="chart-container">
-                <h3>Tranches d'Âge</h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={ageData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="tranche" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#FF8C00" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="charts-grid">
+                {activeChart === 'region' && (
+                  <div className="chart-container">
+                    <h3>Répartition par Région</h3>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={regionData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#FF8C00" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {activeChart === 'departement' && (
+                  <div className="chart-container">
+                    <h3>Répartition par Département</h3>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={deptData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#3498DB" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {activeChart === 'projet' && (
+                  <div className="chart-container">
+                    <h3>Employés par Projet</h3>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={projectData} layout="vertical" margin={{ left: 80 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={80} />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#27AE60" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {activeChart === 'evolution' && (
+                  <div className="chart-container">
+                    <h3>Embauches Mensuelles (12 mois)</h3>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={hiresData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="mois" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#FF8C00" radius={[4, 4, 0, 0]} name="Embauches" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {activeChart === 'genre' && (
+                  <div className="chart-container">
+                    <h3>Répartition par Genre</h3>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <PieChart>
+                        <Pie
+                          data={genreData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, value }) => `${name}: ${value}`}
+                          outerRadius={120}
+                          dataKey="value"
+                        >
+                          {genreData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {activeChart === 'age' && (
+                  <div className="chart-container">
+                    <h3>Tranches d'Âge</h3>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={ageData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="tranche" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#9B59B6" radius={[4, 4, 0, 0]} name="Employés" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {activeChart === 'poste' && (
+                  <div className="chart-container">
+                    <h3>Répartition par Poste</h3>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <PieChart>
+                        <Pie
+                          data={posteData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ nom, count }) => `${nom}: ${count}`}
+                          outerRadius={120}
+                          dataKey="count"
+                        >
+                          {posteData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
-            {activeChart === 'poste' && (
-              <div className="chart-container">
-                <h3>Répartition par Poste</h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <PieChart>
-                    <Pie
-                      data={posteData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ nom, count }) => `${nom}: ${count}`}
-                      outerRadius={120}
-                      fill="#8884d8"
-                      dataKey="count"
-                    >
-                      {posteData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {activeChart === 'diplome' && (
-              <div className="chart-container">
-                <h3>Répartition par Diplôme</h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={diplomeData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="nom" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#FF8C00" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {(activeChart === 'departement' || activeChart === 'sousprefecture') && (
-              <div className="chart-container">
-                <h3>{activeChart === 'departement' ? 'Répartition par Département' : 'Répartition par Sous-Préfecture'}</h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={regionData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#FF8C00" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="export-section">
-          <button className="btn-export">
-            <Download size={18} />
-            Export Complet (Toutes les données)
-          </button>
-          <p className="export-note">Les fichiers sont générés au format Excel (.xlsx) avec l'horodatage</p>
-        </div>
+            <div className="export-section">
+              <button className="btn-export">
+                <Download size={18} />
+                Export Complet (Toutes les données)
+              </button>
+              <p className="export-note">Les fichiers sont générés au format Excel (.xlsx) avec l'horodatage</p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
