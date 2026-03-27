@@ -5,6 +5,7 @@ import {
   Edit3, Shield, Mail, Send, Bell,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 type Tab = 'profile' | 'security' | 'notifications' | 'appearance';
 
@@ -14,7 +15,7 @@ export default function ResponsibleSettingsPage() {
   const { user } = useAuth();
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-  const [darkMode, setDarkMode]   = useState(false);
+  const [darkMode, handleToggleDark] = useDarkMode();
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const [toast, setToast]         = useState<Toast | null>(null);
   const [saving, setSaving]       = useState(false);
@@ -38,8 +39,6 @@ export default function ResponsibleSettingsPage() {
 
   // Load current user data (including email) from API
   useEffect(() => {
-    const saved = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(saved);
     if (!user) return;
     setNom(user.nom || '');
     setPrenom(user.prenom || '');
@@ -139,14 +138,6 @@ export default function ResponsibleSettingsPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  // ── Toggle dark mode ────────────────────────────────────────
-  const handleToggleDark = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    localStorage.setItem('darkMode', String(next));
-    document.documentElement.classList.toggle('dark-mode', next);
   };
 
   // ── Password strength ───────────────────────────────────────

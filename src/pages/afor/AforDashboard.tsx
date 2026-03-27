@@ -9,6 +9,7 @@ import {
 import ZoomPlugin from 'chartjs-plugin-zoom';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import '../../styles/AforDashboard.css';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler, ZoomPlugin);
 
@@ -59,7 +60,7 @@ interface ImportProgress {
 export default function AforDashboard() {
   const navigate = useNavigate();
   const { logout: _logout } = useAuth();
-  const [darkMode,          setDarkMode]          = useState(false);
+  const [darkMode] = useDarkMode();
   const [filterType,        setFilterType]         = useState<'all' | 'active'>('all');
   const [isLoading,         setIsLoading]          = useState(true);
   const [stats,             setStats]              = useState<DashboardStats | null>(null);
@@ -75,11 +76,6 @@ export default function AforDashboard() {
   const [importProgress,    setImportProgress]     = useState<ImportProgress | null>(null);
   const [isImporting,       setIsImporting]        = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
-
-  useEffect(() => {
-    const saved = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(saved);
-  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -171,23 +167,8 @@ export default function AforDashboard() {
     const token    = sessionStorage.getItem('token');
     const acteurId = sessionStorage.getItem('acteur_id');
     if (!token || !acteurId) { navigate('/login'); return; }
-    const saved = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(saved);
-    if (saved) {
-      document.documentElement.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-    }
     fetchDashboardData(filterType);
   }, [filterType, fetchDashboardData, navigate]);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-    }
-  }, [darkMode]);
 
 
   const handleDownloadTemplate = async () => {

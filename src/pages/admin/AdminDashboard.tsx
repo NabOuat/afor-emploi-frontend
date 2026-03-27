@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Users, Briefcase, TrendingUp, Download, Loader, FolderOpen } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
+import { useDarkMode } from '../../hooks/useDarkMode';
 import '../../styles/AdminDashboard.css';
 
 interface AdminStats {
@@ -26,29 +27,11 @@ const COLORS = ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6', '#F39C12'
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode] = useDarkMode();
   const [loading, setLoading] = useState(true);
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
   const [dashData, setDashData] = useState<DashboardData | null>(null);
   const [activeChart, setActiveChart] = useState('region');
-
-  useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(savedDarkMode);
-    if (savedDarkMode) {
-      document.documentElement.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-    }
-  }, [darkMode]);
 
   useEffect(() => {
     fetchData();
