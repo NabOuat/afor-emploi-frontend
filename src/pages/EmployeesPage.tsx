@@ -189,7 +189,10 @@ export default function EmployeesPage() {
 
   // Tri par colonne
   const sortedEmployees = [...filteredEmployees].sort((a, b) => {
-    if (!sortField) return 0;
+    if (!sortField) {
+      // Par défaut, afficher les employés les plus récents en premier (ordre inverse de l'API)
+      return 0;
+    }
     
     const aValue = a[sortField];
     const bValue = b[sortField];
@@ -205,7 +208,7 @@ export default function EmployeesPage() {
     }
     
     return 0;
-  });
+  }).reverse();
 
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
