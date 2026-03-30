@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Edit2, Plus, Moon, Sun, LogOut, ChevronLeft, Users, CheckCircle, AlertCircle, TrendingDown, Download, ChevronLeft as ChevronLeftIcon, ChevronRight, Eye, MapPin, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Edit2, Plus, Users, CheckCircle, Download, ChevronLeft, ChevronRight, Eye, MapPin, RefreshCw, ArrowUp, ArrowDown, BarChart2, FileText } from 'lucide-react';
 import EmployeeModal from '../components/EmployeeModal';
 import EditEmployeeModal from '../components/EditEmployeeModal';
 import ChangeLocationModal from '../components/ChangeLocationModal';
@@ -9,6 +9,7 @@ import RenewContractModal from '../components/RenewContractModal';
 import CreateEmployeeModal from '../components/CreateEmployeeModal';
 import SkeletonLoader from '../components/SkeletonLoader';
 import '../styles/EmployeesPage.css';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 interface Projet {
   id: string;
@@ -49,8 +50,9 @@ type SortOrder = 'asc' | 'desc';
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const [darkMode, setDarkMode] = useState(false);
+  const { actorType } = useAuth();
+  const isRespo = actorType === 'RESPO';
+  const [darkMode] = useDarkMode();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,9 +81,6 @@ export default function EmployeesPage() {
       return;
     }
     
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(savedDarkMode);
-
     // Récupérer les employés de l'utilisateur connecté
     const fetchEmployees = async () => {
       try {
@@ -92,21 +91,18 @@ export default function EmployeesPage() {
         }
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-        const response = await fetch(`${apiUrl}/employees/list/${acteurId}`);
+        const url = isRespo
+          ? `${apiUrl}/employees/list-all`
+          : `${apiUrl}/employees/list/${acteurId}`;
+        const response = await fetch(url);
         
-        console.log('Réponse API:', response.status);
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Données brutes reçues:', data);
-          console.log('Type de données:', typeof data);
-          console.log('Est un array?', Array.isArray(data));
-          console.log('Longueur:', data?.length);
           
           if (data && Array.isArray(data) && data.length > 0) {
             // Transformer les données de l'API en Employee
             const transformedEmployees = data.map((emp: any) => {
-              console.log('Transformation employé - données brutes:', emp);
               
               const statut: 'Contractuel' | 'Fonctionnaire' = emp.type_personne === 'Fonctionnaire' ? 'Fonctionnaire' : 'Contractuel';
               const genre: 'M' | 'F' = (emp.genre === 'M' || emp.genre === 'F') ? emp.genre : 'M';
@@ -137,17 +133,11 @@ export default function EmployeesPage() {
                 projets: Array.isArray(emp.projets) ? emp.projets : [],
               };
               
-              console.log('Employé transformé:', transformed);
               return transformed;
             });
-            console.log('Employés transformés:', transformedEmployees);
-            console.log('Nombre d\'employés transformés:', transformedEmployees.length);
-            console.log('Avant setEmployees - employees state:', employees);
             setEmployees(transformedEmployees);
-            console.log('Après setEmployees - employees state:', transformedEmployees);
             setIsLoading(false);
           } else {
-            console.log('Aucun employé trouvé - data:', data);
             setEmployees([]);
             setIsLoading(false);
           }
@@ -172,26 +162,6 @@ export default function EmployeesPage() {
 
     return () => clearInterval(timer);
   }, [navigate]);
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', String(newDarkMode));
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-    }
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const handleGoBack = () => {
-    navigate(-1);
-  };
 
   // Extraire les projets uniques
   useEffect(() => {
@@ -254,12 +224,6 @@ export default function EmployeesPage() {
     setCurrentPage(1);
   };
 
-  // Logging pour diagnostiquer
-  console.log('Employees state:', employees);
-  console.log('Filtered employees:', filteredEmployees);
-  console.log('Current page:', currentPage);
-  console.log('Items per page:', itemsPerPage);
-  console.log('Current items:', currentItems);
 
   const handleViewEmployee = (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -309,7 +273,10 @@ export default function EmployeesPage() {
         if (!acteurId) return;
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-        const response = await fetch(`${apiUrl}/employees/list/${acteurId}`);
+        const url = isRespo
+          ? `${apiUrl}/employees/list-all`
+          : `${apiUrl}/employees/list/${acteurId}`;
+        const response = await fetch(url);
         
         if (response.ok) {
           const data = await response.json();
@@ -589,29 +556,6 @@ export default function EmployeesPage() {
   const maleCount = employees.filter((emp) => emp.genre === 'M').length;
   const femaleCount = employees.filter((emp) => emp.genre === 'F').length;
   const activeContracts = employees.filter((emp) => emp.validiteContrat === 'En cours').length;
-  
-  // Contrats expirant dans 30 jours (calcul réel basé sur date_fin)
-  const expiringContracts = employees.filter((emp) => {
-    if (!emp.date_fin || emp.validiteContrat !== 'En cours') return false;
-    const today = new Date();
-    const endDate = new Date(emp.date_fin);
-    const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return daysUntilExpiry > 0 && daysUntilExpiry <= 30;
-  }).length;
-  
-  // Ancienneté moyenne (en mois)
-  const avgTenure = employees.length > 0 
-    ? Math.round(
-        employees.reduce((sum, emp) => {
-          if (!emp.date_debut) return sum;
-          const today = new Date();
-          const startDate = new Date(emp.date_debut);
-          const months = (today.getFullYear() - startDate.getFullYear()) * 12 + 
-                        (today.getMonth() - startDate.getMonth());
-          return sum + months;
-        }, 0) / employees.length
-      )
-    : 0;
 
   const stats = [
     {
@@ -628,18 +572,6 @@ export default function EmployeesPage() {
       icon: CheckCircle,
       color: '#27AE60',
       value: activeContracts,
-    },
-    {
-      title: 'Contrats expirant (30j)',
-      icon: AlertCircle,
-      color: '#F39C12',
-      value: expiringContracts,
-    },
-    {
-      title: 'Ancienneté moyenne',
-      icon: TrendingDown,
-      color: '#3498DB',
-      value: `${avgTenure} mois`,
     },
   ];
 
@@ -660,9 +592,6 @@ export default function EmployeesPage() {
       <div className="employees-header">
         <div className="header-top">
           <div className="header-left">
-            <button className="back-btn" onClick={handleGoBack} title="Retour">
-              <ChevronLeft size={24} />
-            </button>
             <div className="header-info">
               <h1>Gestion des employés</h1>
               <p className="current-date-time">{formatDateTime()}</p>
@@ -685,12 +614,14 @@ export default function EmployeesPage() {
                   borderRadius: '8px',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                   zIndex: 100,
-                  minWidth: '150px',
+                  minWidth: '160px',
                 }}>
                   <button
                     onClick={() => exportData('csv')}
                     style={{
-                      display: 'block',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
                       width: '100%',
                       padding: '0.75rem 1rem',
                       border: 'none',
@@ -699,17 +630,18 @@ export default function EmployeesPage() {
                       cursor: 'pointer',
                       color: darkMode ? '#e0e0e0' : '#2c3e50',
                       fontSize: '0.9rem',
-                      transition: 'background 0.2s ease',
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = darkMode ? '#3a3a52' : '#f5f5f5'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                   >
-                    📊 Exporter CSV
+                    <BarChart2 size={16} /> Exporter CSV
                   </button>
                   <button
                     onClick={() => exportData('pdf')}
                     style={{
-                      display: 'block',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
                       width: '100%',
                       padding: '0.75rem 1rem',
                       border: 'none',
@@ -718,44 +650,28 @@ export default function EmployeesPage() {
                       cursor: 'pointer',
                       color: darkMode ? '#e0e0e0' : '#2c3e50',
                       fontSize: '0.9rem',
-                      transition: 'background 0.2s ease',
                       borderTop: `1px solid ${darkMode ? '#4a4a6a' : '#e0e0e0'}`,
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = darkMode ? '#3a3a52' : '#f5f5f5'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                   >
-                    📋 Exporter PDF
+                    <FileText size={16} /> Exporter PDF
                   </button>
                 </div>
               )}
             </div>
-            <button className="add-btn" onClick={handleOpenCreateModal} title="Ajouter un employé">
-              <Plus size={20} />
-              <span>Nouvel employé</span>
-            </button>
-            <div className="dark-mode-switch">
-              <input
-                type="checkbox"
-                id="dark-mode-toggle"
-                checked={darkMode}
-                onChange={toggleDarkMode}
-                className="switch-input"
-              />
-              <label htmlFor="dark-mode-toggle" className="switch-label">
-                <Moon size={16} className="moon-icon" />
-                <Sun size={16} className="sun-icon" />
-              </label>
-            </div>
-            <button className="logout-btn" onClick={handleLogout} title="Déconnexion">
-              <LogOut size={20} />
-              <span>Déconnexion</span>
-            </button>
+            {!isRespo && (
+              <button className="add-btn" onClick={handleOpenCreateModal} title="Ajouter un employé">
+                <Plus size={20} />
+                <span>Nouvel employé</span>
+              </button>
+            )}
           </div>
         </div>
 
         <div className="stats-grid">
           {isLoading ? (
-            Array.from({ length: 4 }).map((_, index) => (
+            Array.from({ length: 2 }).map((_, index) => (
               <div key={index} className="stat-card-skeleton" />
             ))
           ) : (
@@ -926,13 +842,17 @@ export default function EmployeesPage() {
                     <button className="action-btn view-btn" onClick={() => handleViewEmployee(employee)} title="Voir détails">
                       <Eye size={16} />
                     </button>
-                    <button className="action-btn edit-btn" onClick={() => handleEditEmployee(employee)} title="Modifier">
-                      <Edit2 size={16} />
-                    </button>
-                    <button className="action-btn location-btn" onClick={() => handleChangeLocation(employee)} title="Changer localisation">
-                      <MapPin size={16} />
-                    </button>
-                    {employee.validiteContrat === 'Expiré' && (
+                    {!isRespo && (
+                      <button className="action-btn edit-btn" onClick={() => handleEditEmployee(employee)} title="Modifier">
+                        <Edit2 size={16} />
+                      </button>
+                    )}
+                    {!isRespo && (
+                      <button className="action-btn location-btn" onClick={() => handleChangeLocation(employee)} title="Changer localisation">
+                        <MapPin size={16} />
+                      </button>
+                    )}
+                    {!isRespo && employee.validiteContrat === 'Expiré' && (
                       <button className="action-btn renew-btn" onClick={() => handleRenewContract(employee)} title="Reconduire contrat">
                         <RefreshCw size={16} />
                       </button>
@@ -958,7 +878,7 @@ export default function EmployeesPage() {
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
             >
-              <ChevronLeftIcon size={18} />
+              <ChevronLeft size={18} />
               Précédent
             </button>
             <div className="pagination-info">

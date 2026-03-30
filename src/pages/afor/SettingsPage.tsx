@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Lock, Palette, Shield, X } from 'lucide-react';
+import { useState } from 'react';
+import { Save, Lock, Palette, Shield, X } from 'lucide-react';
 import '../../styles/SettingsPage.css';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 interface SettingsState {
-  darkMode: boolean;
   notifications: boolean;
   emailNotifications: boolean;
   apiKey: string;
@@ -17,9 +16,8 @@ interface PasswordChangeForm {
 }
 
 export default function SettingsPage() {
-  const navigate = useNavigate();
+  const [darkMode, toggleDarkMode] = useDarkMode();
   const [settings, setSettings] = useState<SettingsState>({
-    darkMode: false,
     notifications: true,
     emailNotifications: true,
     apiKey: 'sk_live_****',
@@ -35,23 +33,13 @@ export default function SettingsPage() {
   });
   const [passwordError, setPasswordError] = useState('');
 
-  useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setSettings(prev => ({ ...prev, darkMode: savedDarkMode }));
-  }, []);
-
   const handleChange = (key: keyof SettingsState, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSave = () => {
-    localStorage.setItem('darkMode', String(settings.darkMode));
     setSaveMessage('Paramètres sauvegardés avec succès!');
     setTimeout(() => setSaveMessage(''), 3000);
-  };
-
-  const handleBack = () => {
-    navigate(-1);
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,11 +75,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className={`settings-page ${settings.darkMode ? 'dark-mode' : ''}`}>
+    <div className={`settings-page ${darkMode ? 'dark-mode' : ''}`}>
       <div className="settings-header">
-        <button className="back-btn" onClick={handleBack} title="Retour">
-          <ArrowLeft size={24} />
-        </button>
         <h1>Paramètres</h1>
       </div>
 
@@ -128,8 +113,8 @@ export default function SettingsPage() {
                 <label className="toggle-switch">
                   <input
                     type="checkbox"
-                    checked={settings.darkMode}
-                    onChange={(e) => handleChange('darkMode', e.target.checked)}
+                    checked={darkMode}
+                    onChange={toggleDarkMode}
                   />
                   <span className="toggle-slider"></span>
                 </label>

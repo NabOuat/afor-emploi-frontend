@@ -1,381 +1,547 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  LayoutDashboard, User, LogOut, Moon, Sun, Menu, X,
+  Moon, Sun, Send,
   BarChart3, Users, Briefcase, MapPin, TrendingUp,
   AlertTriangle, Building2, ClipboardList, GraduationCap,
-  Calendar, AlertCircle, CheckCircle, Clock, ChevronRight
+  Calendar, AlertCircle, CheckCircle, Clock, Filter, Search,
+  Download, ChevronDown, FileSpreadsheet, Presentation
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { exportToExcel, exportToPowerPoint, exportSectionToExcel } from '../../utils/dashboardExport';
 import {
-  ResponsiveContainer, LineChart, Line, BarChart, Bar,
-  PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend
-} from 'recharts';
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement,
+  PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler
+} from 'chart.js';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import '../../styles/ResponsibleDashboard.css';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
-interface StatistiqueRH {
-  totalEmployes: number;
-  cdi: number;
-  cdd: number;
-  consultant: number;
-  hommes: number;
-  femmes: number;
-  tauxFeminisation: number;
-  ageMin: number;
-  ageMax: number;
-  ageMoyen: number;
-  contratsActifs: number;
-  contratsExpires: number;
-  tauxRenouvellement: number;
-  ratioPermanentTemporaire: string;
-  dureemoyenneContrats: number;
-}
+ChartJS.register(
+  CategoryScale, LinearScale, BarElement,
+  PointElement, LineElement, ArcElement,
+  Title, Tooltip, Legend, Filler
+);
 
-interface ContratsEcheance {
-  dans3mois: number;
-  dans6mois: number;
-  dans12mois: number;
-}
-
-interface EffectifParRegion {
+interface Employee {
+  id: string;
+  nom: string;
+  prenom: string;
+  matricule: string;
+  genre: string;
+  age: number;
+  poste: string;
+  type_contrat: string;
+  date_debut: string | null;
+  date_fin: string | null;
+  validiteContrat: string;
+  is_active: boolean;
   region: string;
-  effectif: number;
-  pourcentage: number;
+  diplome: string;
+  acteur_id: string;
+  acteur_nom: string;
+  type_acteur: string;
+  projets: { id: string; nom: string }[];
 }
 
-interface EvolutionEffectif {
-  mois: string;
-  effectif: number;
-}
-
-interface GroupeAge {
-  tranche: string;
-  nombre: number;
-  pourcentage: number;
-}
-
-interface NiveauEducation {
-  niveau: string;
-  nombre: number;
-  pourcentage: number;
-}
-
-interface EmbauchesMensuelles {
-  mois: string;
-  nombre: number;
-}
-
-interface ZoneNonCouverte {
-  region: string;
-  objectif: number;
-  couverture: number;
-  deficit: number;
-}
-
-const CHART_COLORS = ['#FF8C00', '#3498DB', '#27AE60', '#E74C3C', '#9B59B6', '#F39C12', '#1ABC9C'];
+interface ActeurOption { id: string; nom: string; type_acteur: string; }
+interface ProjetOption { id: string; nom: string; nom_complet: string; }
 
 export default function ResponsibleDashboard() {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
-  const [darkMode, setDarkMode] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { logout: _logout, user } = useAuth();
+  const [darkMode, toggleDarkMode] = useDarkMode();
   const [loading, setLoading] = useState(true);
-  const [filterContrats, setFilterContrats] = useState<'tous' | 'actifs' | 'inactifs'>('tous');
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+  const [sendingReport, setSendingReport] = useState(false);
+  const [reportToast, setReportToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-  const [stats, setStats] = useState<StatistiqueRH | null>(null);
-  const [contratsEcheance, setContratsEcheance] = useState<ContratsEcheance | null>(null);
-  const [effectifParRegion, setEffectifParRegion] = useState<EffectifParRegion[]>([]);
-  const [evolutionEffectifs, setEvolutionEffectifs] = useState<EvolutionEffectif[]>([]);
-  const [groupeAge, setGroupeAge] = useState<GroupeAge[]>([]);
-  const [niveauEducation, setNiveauEducation] = useState<NiveauEducation[]>([]);
-  const [embauchesMensuelles, setEmbauchesMensuelles] = useState<EmbauchesMensuelles[]>([]);
-  const [zonesNonCouverte, setZonesNonCouverte] = useState<ZoneNonCouverte[]>([]);
+  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
+  const [acteurs, setActeurs] = useState<ActeurOption[]>([]);
+  const [projets, setProjets] = useState<ProjetOption[]>([]);
 
+  const [filterStatus, setFilterStatus] = useState<'tous' | 'actifs'>('tous');
+  const [filterActeurId, setFilterActeurId] = useState('');
+  const [filterProjetId, setFilterProjetId] = useState('');
+  const [searchText, setSearchText] = useState('');
+
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
+  // ── Close export dropdown on outside click ──────────────────
   useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(savedDarkMode);
-    if (savedDarkMode) document.documentElement.classList.add('dark-mode');
-  }, []);
+    if (!exportOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node))
+        setExportOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [exportOpen]);
 
+  // ── Load filter options ─────────────────────────────────────
   useEffect(() => {
-    fetchStatistics();
-  }, [filterContrats]);
+    Promise.all([
+      fetch(`${apiUrl}/employees/acteurs-of-af`).then(r => r.json()).catch(() => []),
+      fetch(`${apiUrl}/employees/projets-all`).then(r => r.json()).catch(() => []),
+    ]).then(([a, p]) => { setActeurs(a); setProjets(p); });
+  }, [apiUrl]);
 
-  const getFilteredEmployees = (employees: any[]): any[] => {
-    if (filterContrats === 'actifs') return employees.filter((e: any) => e.validiteContrat === 'En cours');
-    if (filterContrats === 'inactifs') return employees.filter((e: any) => e.validiteContrat === 'Expiré');
-    return employees;
-  };
-
-  const fetchStatistics = async () => {
+  // ── Load employees when acteur/projet filter changes ────────
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filterActeurId) params.set('filter_acteur_id', filterActeurId);
+    if (filterProjetId) params.set('filter_projet_id', filterProjetId);
     setLoading(true);
+    fetch(`${apiUrl}/employees/list-all?${params}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setAllEmployees(Array.isArray(data) ? data : []))
+      .catch(() => setAllEmployees([]))
+      .finally(() => setLoading(false));
+  }, [apiUrl, filterActeurId, filterProjetId]);
+
+  // ── Send report manually ────────────────────────────────────
+  const handleSendReport = async () => {
+    if (!user?.username) return;
+    setSendingReport(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const acteurId = sessionStorage.getItem('acteur_id');
-      const response = await fetch(`${apiUrl}/employees/list/${acteurId}`);
-      if (response.ok) {
-        const employees = await response.json();
-        const filtered = getFilteredEmployees(employees);
-        setStats(calculateStatistics(filtered));
-        setContratsEcheance(calculateContratsEcheance(filtered));
-        setEffectifParRegion(calculateEffectifParRegion(filtered));
-        setEvolutionEffectifs(calculateEvolutionEffectifs(filtered));
-        setGroupeAge(calculateGroupeAge(filtered));
-        setNiveauEducation(calculateNiveauEducation(filtered));
-        setEmbauchesMensuelles(calculateEmbauchesMensuelles(filtered));
-        setZonesNonCouverte(calculateZonesNonCouverte(filtered));
+      const res = await fetch(`${apiUrl}/auth/send-test-report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user.username }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Échec de l'envoi");
       }
-    } catch (error) {
-      console.error('Erreur lors du chargement des statistiques:', error);
+      setReportToast({ type: 'success', msg: 'Rapport envoyé par email !' });
+    } catch (e: any) {
+      setReportToast({ type: 'error', msg: e.message || "Erreur d'envoi" });
     } finally {
-      setLoading(false);
+      setSendingReport(false);
+      setTimeout(() => setReportToast(null), 3500);
     }
   };
 
-  const calculateStatistics = (employees: any[]): StatistiqueRH => {
-    const totalEmployes = employees.length;
-    const cdi = employees.filter((e: any) => e.type_contrat === 'CDI').length;
-    const cdd = employees.filter((e: any) => e.type_contrat === 'CDD').length;
-    const consultant = employees.filter((e: any) => e.type_contrat === 'Consultant').length;
-    const hommes = employees.filter((e: any) => e.genre === 'M').length;
-    const femmes = employees.filter((e: any) => e.genre === 'F').length;
-    const contratsActifs = employees.filter((e: any) => e.validiteContrat === 'En cours').length;
-    const contratsExpires = employees.filter((e: any) => e.validiteContrat === 'Expiré').length;
-    const ages = employees.filter((e: any) => e.age).map((e: any) => e.age);
-    const ageMoyen = ages.length > 0 ? Math.round(ages.reduce((a: number, b: number) => a + b, 0) / ages.length) : 0;
-    const dureesContrats = employees
-      .filter((e: any) => e.date_debut && e.date_fin)
-      .map((e: any) => {
-        const debut = new Date(e.date_debut);
-        const fin = new Date(e.date_fin);
-        return (fin.getFullYear() - debut.getFullYear()) * 12 + (fin.getMonth() - debut.getMonth());
+  // ── Client-side filters (status + search) ──────────────────
+  const employees = useMemo(() => {
+    let list = allEmployees;
+    if (filterStatus === 'actifs') list = list.filter(e => e.is_active);
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase();
+      list = list.filter(e =>
+        `${e.nom} ${e.prenom}`.toLowerCase().includes(q) ||
+        e.matricule?.toLowerCase().includes(q) ||
+        e.poste?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [allEmployees, filterStatus, searchText]);
+
+  const tk = darkMode ? '#8a98b0' : '#6b7a90';
+  const gr = darkMode ? '#2a3448' : '#e8edf3';
+
+  // ── Stats ───────────────────────────────────────────────────
+  const stats = useMemo(() => {
+    const total = employees.length;
+    const cdi = employees.filter(e => e.type_contrat === 'CDI').length;
+    const cdd = employees.filter(e => e.type_contrat === 'CDD').length;
+    const consultant = employees.filter(e => e.type_contrat === 'Consultant').length;
+    const hommes = employees.filter(e => e.genre === 'M').length;
+    const femmes = employees.filter(e => e.genre === 'F').length;
+    const actifs = employees.filter(e => e.is_active).length;
+    const expires = total - actifs;
+    const ages = employees.filter(e => e.age > 0).map(e => e.age);
+    const ageMoyen = ages.length ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : 0;
+    const durations = employees
+      .filter(e => e.date_debut && e.date_fin)
+      .map(e => {
+        const d = new Date(e.date_debut!); const f = new Date(e.date_fin!);
+        return (f.getFullYear() - d.getFullYear()) * 12 + (f.getMonth() - d.getMonth());
       });
     return {
-      totalEmployes, cdi, cdd, consultant, hommes, femmes,
-      tauxFeminisation: totalEmployes > 0 ? Math.round((femmes / totalEmployes) * 100) : 0,
-      ageMin: ages.length > 0 ? Math.min(...ages) : 0,
-      ageMax: ages.length > 0 ? Math.max(...ages) : 0,
-      ageMoyen, contratsActifs, contratsExpires,
-      tauxRenouvellement: totalEmployes > 0 ? Math.round((contratsExpires / totalEmployes) * 100) : 0,
-      ratioPermanentTemporaire: `${cdi}/${cdd + consultant}`,
-      dureemoyenneContrats: dureesContrats.length > 0
-        ? Math.round(dureesContrats.reduce((a: number, b: number) => a + b, 0) / dureesContrats.length) : 0,
+      total, cdi, cdd, consultant, hommes, femmes,
+      tauxFem: total ? Math.round(femmes * 100 / total) : 0,
+      ageMin: ages.length ? Math.min(...ages) : 0,
+      ageMax: ages.length ? Math.max(...ages) : 0,
+      ageMoyen, actifs, expires,
+      tauxRenouvellement: total ? Math.round(expires * 100 / total) : 0,
+      ratioPermanentTemp: `${cdi}/${cdd + consultant}`,
+      dureeMoy: durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0,
     };
-  };
+  }, [employees]);
 
-  const calculateContratsEcheance = (employees: any[]): ContratsEcheance => {
+  const contratsEcheance = useMemo(() => {
     const today = new Date();
-    const d3 = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate());
-    const d6 = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
+    const d3  = new Date(today.getFullYear(), today.getMonth() + 3,  today.getDate());
+    const d6  = new Date(today.getFullYear(), today.getMonth() + 6,  today.getDate());
     const d12 = new Date(today.getFullYear(), today.getMonth() + 12, today.getDate());
     return {
-      dans3mois: employees.filter((e: any) => {
-        if (!e.date_fin || e.validiteContrat !== 'En cours') return false;
-        const fin = new Date(e.date_fin);
-        return fin <= d3 && fin > today;
-      }).length,
-      dans6mois: employees.filter((e: any) => {
-        if (!e.date_fin || e.validiteContrat !== 'En cours') return false;
-        const fin = new Date(e.date_fin);
-        return fin <= d6 && fin > d3;
-      }).length,
-      dans12mois: employees.filter((e: any) => {
-        if (!e.date_fin || e.validiteContrat !== 'En cours') return false;
-        const fin = new Date(e.date_fin);
-        return fin <= d12 && fin > d6;
-      }).length,
+      dans3mois:  employees.filter(e => { if (!e.date_fin || !e.is_active) return false; const f = new Date(e.date_fin); return f <= d3  && f > today; }).length,
+      dans6mois:  employees.filter(e => { if (!e.date_fin || !e.is_active) return false; const f = new Date(e.date_fin); return f <= d6  && f > d3;  }).length,
+      dans12mois: employees.filter(e => { if (!e.date_fin || !e.is_active) return false; const f = new Date(e.date_fin); return f <= d12 && f > d6;  }).length,
     };
-  };
+  }, [employees]);
 
-  const calculateEffectifParRegion = (employees: any[]): EffectifParRegion[] => {
-    const map = new Map<string, number>();
-    employees.forEach((e: any) => {
-      const r = e.region || 'Non spécifiée';
-      map.set(r, (map.get(r) || 0) + 1);
-    });
-    const total = employees.length;
-    return Array.from(map.entries())
-      .map(([region, effectif]) => ({ region, effectif, pourcentage: total > 0 ? Math.round((effectif / total) * 100) : 0 }))
-      .sort((a, b) => b.effectif - a.effectif)
-      .slice(0, 8);
-  };
-
-  const calculateEvolutionEffectifs = (employees: any[]): EvolutionEffectif[] => {
+  // ── Chart data ──────────────────────────────────────────────
+  const evolutionData = useMemo(() => {
     const today = new Date();
-    return Array.from({ length: 12 }, (_, i) => {
-      const date = new Date(today.getFullYear(), today.getMonth() - (11 - i), 1);
-      const mois = date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
-      const effectif = employees.filter((e: any) => {
+    const labels: string[] = [];
+    const values: number[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      labels.push(d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }));
+      values.push(employees.filter(e => {
         if (!e.date_debut) return false;
-        const debut = new Date(e.date_debut);
-        const fin = e.date_fin ? new Date(e.date_fin) : new Date('2099-12-31');
-        return debut <= date && fin >= date;
-      }).length;
-      return { mois, effectif: effectif || employees.length };
-    });
-  };
+        const s = new Date(e.date_debut);
+        const f = e.date_fin ? new Date(e.date_fin) : new Date('2099-12-31');
+        return s <= d && f >= d;
+      }).length);
+    }
+    return { labels, datasets: [{ label: 'Effectif', data: values, borderColor: '#FF8C00', backgroundColor: 'rgba(255,140,0,0.12)', fill: true, tension: 0.4, pointBackgroundColor: '#FF8C00', pointRadius: 4 }] };
+  }, [employees]);
 
-  const calculateGroupeAge = (employees: any[]): GroupeAge[] => {
-    const groupes: Record<string, number> = { '< 25': 0, '25–34': 0, '35–44': 0, '45–54': 0, '55+': 0 };
-    const total = employees.length;
-    employees.forEach((e: any) => {
-      if (e.age) {
-        if (e.age < 25) groupes['< 25']++;
-        else if (e.age < 35) groupes['25–34']++;
-        else if (e.age < 45) groupes['35–44']++;
-        else if (e.age < 55) groupes['45–54']++;
-        else groupes['55+']++;
-      }
-    });
-    return Object.entries(groupes).map(([tranche, nombre]) => ({
-      tranche, nombre, pourcentage: total > 0 ? Math.round((nombre / total) * 100) : 0,
-    }));
-  };
-
-  const calculateNiveauEducation = (employees: any[]): NiveauEducation[] => {
+  const regionData = useMemo(() => {
     const map = new Map<string, number>();
-    const total = employees.length;
-    employees.forEach((e: any) => {
-      const n = e.diplome || 'Non spécifié';
-      map.set(n, (map.get(n) || 0) + 1);
-    });
-    return Array.from(map.entries())
-      .map(([niveau, nombre]) => ({ niveau, nombre, pourcentage: total > 0 ? Math.round((nombre / total) * 100) : 0 }))
-      .sort((a, b) => b.nombre - a.nombre)
-      .slice(0, 6);
-  };
+    employees.forEach(e => { const r = e.region || 'N/A'; map.set(r, (map.get(r) || 0) + 1); });
+    const sorted = [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+    return { labels: sorted.map(([r]) => r), datasets: [{ label: 'Effectif', data: sorted.map(([, n]) => n), backgroundColor: '#FF8C00', borderRadius: 4 }] };
+  }, [employees]);
 
-  const calculateEmbauchesMensuelles = (employees: any[]): EmbauchesMensuelles[] => {
+  const genreData = useMemo(() => ({
+    labels: ['Hommes', 'Femmes'],
+    datasets: [{ data: [stats.hommes, stats.femmes], backgroundColor: ['#3498DB', '#E74C3C'], borderColor: darkMode ? '#1c2333' : '#fff', borderWidth: 3, hoverOffset: 8 }],
+  }), [stats, darkMode]);
+
+  const ageData = useMemo(() => {
+    const groups: Record<string, number> = { '< 25': 0, '25–34': 0, '35–44': 0, '45–54': 0, '55+': 0 };
+    employees.forEach(e => {
+      if (!e.age) return;
+      if (e.age < 25) groups['< 25']++;
+      else if (e.age < 35) groups['25–34']++;
+      else if (e.age < 45) groups['35–44']++;
+      else if (e.age < 55) groups['45–54']++;
+      else groups['55+']++;
+    });
+    return { labels: Object.keys(groups), datasets: [{ label: 'Employés', data: Object.values(groups), backgroundColor: '#3498DB', borderRadius: 4 }] };
+  }, [employees]);
+
+  const contratsTypeData = useMemo(() => ({
+    labels: ['CDI', 'CDD', 'Consultant'],
+    datasets: [{ data: [stats.cdi, stats.cdd, stats.consultant], backgroundColor: ['#27AE60', '#3498DB', '#9B59B6'], borderColor: darkMode ? '#1c2333' : '#fff', borderWidth: 3, hoverOffset: 8 }],
+  }), [stats, darkMode]);
+
+  const embaucheData = useMemo(() => {
     const today = new Date();
     const map = new Map<string, number>();
     for (let i = 11; i >= 0; i--) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      map.set(date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }), 0);
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      map.set(d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }), 0);
     }
-    employees.forEach((e: any) => {
+    employees.forEach(e => {
       if (e.date_debut) {
-        const key = new Date(e.date_debut).toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
-        if (map.has(key)) map.set(key, (map.get(key) || 0) + 1);
+        const k = new Date(e.date_debut).toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+        if (map.has(k)) map.set(k, (map.get(k) || 0) + 1);
       }
     });
-    return Array.from(map.entries()).map(([mois, nombre]) => ({ mois, nombre }));
-  };
+    const entries = [...map.entries()];
+    return { labels: entries.map(([k]) => k), datasets: [{ label: 'Embauches', data: entries.map(([, v]) => v), backgroundColor: '#27AE60', borderRadius: 4 }] };
+  }, [employees]);
 
-  const calculateZonesNonCouverte = (employees: any[]): ZoneNonCouverte[] => {
-    const objectifs: Record<string, number> = {
-      Abidjan: 25, Bouaké: 12, Yamoussoukro: 15, Korhogo: 12,
-      'San-Pédro': 8, Daloa: 10, Gagnoa: 10, Duekoué: 8,
-    };
+  const educData = useMemo(() => {
     const map = new Map<string, number>();
-    employees.forEach((e: any) => {
-      const r = e.region || 'Non spécifiée';
-      map.set(r, (map.get(r) || 0) + 1);
-    });
-    return Array.from(map.entries()).map(([region, effectif]) => {
-      const objectif = objectifs[region] || 10;
-      return { region, objectif, couverture: Math.round((effectif / objectif) * 100), deficit: Math.max(0, objectif - effectif) };
-    }).sort((a, b) => a.couverture - b.couverture);
+    employees.forEach(e => { const d = e.diplome || 'Non spécifié'; map.set(d, (map.get(d) || 0) + 1); });
+    const sorted = [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    return { labels: sorted.map(([k]) => k), datasets: [{ label: 'Employés', data: sorted.map(([, v]) => v), backgroundColor: '#9B59B6', borderRadius: 4 }] };
+  }, [employees]);
+
+  const statutData = useMemo(() => ({
+    labels: ['Actifs', 'Expirés'],
+    datasets: [{ data: [stats.actifs, stats.expires], backgroundColor: ['#27AE60', '#E74C3C'], borderColor: darkMode ? '#1c2333' : '#fff', borderWidth: 3, hoverOffset: 8 }],
+  }), [stats, darkMode]);
+
+  // ── Chart options ───────────────────────────────────────────
+  const baseOpts = () => ({
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: {} },
+    scales: {
+      x: { ticks: { color: tk, font: { size: 11 } }, grid: { color: gr } },
+      y: { ticks: { color: tk, font: { size: 11 } }, grid: { color: gr } },
+    },
+  });
+  const baseOptsRotated = () => ({
+    ...baseOpts(),
+    scales: {
+      x: { ticks: { color: tk, font: { size: 10 }, maxRotation: 30 }, grid: { color: gr } },
+      y: { ticks: { color: tk, font: { size: 11 } }, grid: { color: gr } },
+    },
+  });
+  const donutOpts = (cutout = '68%') => ({
+    responsive: true, maintainAspectRatio: false, cutout,
+    plugins: { legend: { position: 'bottom' as const, labels: { color: tk, padding: 12, font: { size: 12 } } } },
+  });
+
+  // ── Export helpers ──────────────────────────────────────────
+  const exportDate = new Date().toISOString().slice(0, 10);
+  const filterLabel = [
+    filterActeurId ? (acteurs.find(a => a.id === filterActeurId)?.nom ?? filterActeurId) : 'Tous acteurs OF+AF',
+    filterProjetId ? (projets.find(p => p.id === filterProjetId)?.nom ?? filterProjetId) : 'Tous projets',
+    filterStatus === 'actifs' ? 'Contrats actifs' : 'Tous les employés',
+  ].join(' | ');
+
+  const pct = (n: number) => stats.total ? `${Math.round(n * 100 / stats.total)}%` : '0%';
+
+  // Build unified export data from live state
+  const buildExportData = () => ({
+    filterLabel,
+    stats,
+    contratsEcheance,
+    regions:   regionData.labels.map((l, i) => ({ label: l, effectif: regionData.datasets[0].data[i] as number, pct: Math.round((regionData.datasets[0].data[i] as number) * 100 / (stats.total || 1)) })),
+    ages:      ageData.labels.map((l, i)    => ({ tranche: l, nombre: ageData.datasets[0].data[i] as number,    pct: Math.round((ageData.datasets[0].data[i] as number) * 100 / (stats.total || 1)) })),
+    embauches: embaucheData.labels.map((l, i) => ({ mois: l, nombre: embaucheData.datasets[0].data[i] as number })),
+    education: educData.labels.map((l, i)   => ({ diplome: l, nombre: educData.datasets[0].data[i] as number,   pct: Math.round((educData.datasets[0].data[i] as number) * 100 / (stats.total || 1)) })),
+    contrats:  contratsTypeData.labels.map((l, i) => ({ type: l, nombre: contratsTypeData.datasets[0].data[i] as number, pct: Math.round((contratsTypeData.datasets[0].data[i] as number) * 100 / (stats.total || 1)) })),
+    employees,
+  });
+
+  // Section export helper — builds a styled Excel with stats + employee list
+  const secExport = (
+    title: string,
+    icon: string,
+    statsHeaders: string[],
+    statsRows: (string | number)[][],
+    filteredEmployees: typeof employees,
+  ) => {
+    exportSectionToExcel({
+      title, icon, filterLabel, statsHeaders, statsRows,
+      employees: filteredEmployees.map(e => ({
+        nom: e.nom, prenom: e.prenom, matricule: e.matricule || '—',
+        poste: e.poste, type_contrat: e.type_contrat,
+        date_debut: e.date_debut, date_fin: e.date_fin,
+        validiteContrat: e.validiteContrat, region: e.region,
+        acteur_nom: e.acteur_nom, type_acteur: e.type_acteur,
+        genre: e.genre, age: e.age, diplome: e.diplome,
+        projets: e.projets,
+      })),
+    }).catch(console.error);
   };
 
-  const toggleDarkMode = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    localStorage.setItem('darkMode', String(next));
-    document.documentElement.classList.toggle('dark-mode', next);
+  const exports = {
+    kpi: () => secExport(
+      'KPI Généraux', '📊',
+      ['Indicateur', 'Valeur', 'Détail'],
+      [
+        ['Effectif Total',             stats.total,                    'Tous acteurs OF+AF'],
+        ['Contrats Actifs',            stats.actifs,                   ''],
+        ['Contrats Expirés',           stats.expires,                  ''],
+        ['Taux d\'Activation',         pct(stats.actifs),              ''],
+        ['Hommes',                     stats.hommes,                   pct(stats.hommes)],
+        ['Femmes',                     stats.femmes,                   pct(stats.femmes)],
+        ['Taux Féminisation',          `${stats.tauxFem}%`,            ''],
+        ['Âge Moyen',                  `${stats.ageMoyen} ans`,        `Min ${stats.ageMin} / Max ${stats.ageMax}`],
+        ['CDI',                        stats.cdi,                      pct(stats.cdi)],
+        ['CDD',                        stats.cdd,                      pct(stats.cdd)],
+        ['Consultant',                 stats.consultant,               pct(stats.consultant)],
+        ['Taux Renouvellement',        `${stats.tauxRenouvellement}%`, ''],
+        ['Ratio Permanent/Temp',       stats.ratioPermanentTemp,       ''],
+        ['Durée Moy. Contrats',        `${stats.dureeMoy} mois`,       ''],
+        ['Contrats expirant < 3 mois', contratsEcheance.dans3mois,    'CRITIQUE'],
+        ['Contrats expirant < 6 mois', contratsEcheance.dans6mois,    'Attention'],
+        ['Contrats expirant < 12 mois',contratsEcheance.dans12mois,   'À surveiller'],
+      ],
+      employees,
+    ),
+
+    region: () => secExport(
+      'Effectif par Région', '🗺️',
+      ['Région', 'Effectif', '% du Total'],
+      regionData.labels.map((l, i) => [l, regionData.datasets[0].data[i] as number, `${Math.round((regionData.datasets[0].data[i] as number) * 100 / (stats.total || 1))}%`]),
+      employees, // employees are already region-filtered by parent filters
+    ),
+
+    genre: () => {
+      secExport(
+        'Répartition par Genre', '👥',
+        ['Genre', 'Nombre', '% du Total'],
+        [['Hommes', stats.hommes, pct(stats.hommes)], ['Femmes', stats.femmes, pct(stats.femmes)]],
+        employees,
+      );
+    },
+
+    age: () => secExport(
+      'Pyramide des Âges', '📐',
+      ['Tranche d\'Âge', 'Nombre', '% du Total'],
+      ageData.labels.map((l, i) => [l, ageData.datasets[0].data[i] as number, `${Math.round((ageData.datasets[0].data[i] as number) * 100 / (stats.total || 1))}%`]),
+      employees,
+    ),
+
+    contrats: () => secExport(
+      'Types de Contrats', '📋',
+      ['Type de Contrat', 'Nombre', '% du Total'],
+      contratsTypeData.labels.map((l, i) => [l, contratsTypeData.datasets[0].data[i] as number, `${Math.round((contratsTypeData.datasets[0].data[i] as number) * 100 / (stats.total || 1))}%`]),
+      employees,
+    ),
+
+    embauches: () => secExport(
+      'Embauches Mensuelles', '📅',
+      ['Mois', "Nombre d'Embauches"],
+      embaucheData.labels.map((l, i) => [l, embaucheData.datasets[0].data[i] as number]),
+      employees,
+    ),
+
+    education: () => secExport(
+      "Niveau d'Éducation", '🎓',
+      ['Diplôme / Niveau', 'Nombre', '% du Total'],
+      educData.labels.map((l, i) => [l, educData.datasets[0].data[i] as number, `${Math.round((educData.datasets[0].data[i] as number) * 100 / (stats.total || 1))}%`]),
+      employees,
+    ),
+
+    // ── Full exports ──────────────────────────────────────────
+    excel: () => exportToExcel(buildExportData()).catch(console.error),
+    pptx:  () => exportToPowerPoint(buildExportData()).catch(console.error),
   };
 
-  const handleLogout = () => { logout(); navigate('/login'); };
-
-  const genreData = stats ? [
-    { name: 'Hommes', value: stats.hommes },
-    { name: 'Femmes', value: stats.femmes },
-  ] : [];
-
-  const contratsTypeData = stats ? [
-    { name: 'CDI', value: stats.cdi },
-    { name: 'CDD', value: stats.cdd },
-    { name: 'Consultant', value: stats.consultant },
-  ] : [];
-
-  const statutContratData = stats ? [
-    { name: 'Actifs', value: stats.contratsActifs },
-    { name: 'Expirés', value: stats.contratsExpires },
-  ] : [];
+  const todayStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   const kpiCards = [
-    { label: 'Effectif Total', value: stats?.totalEmployes ?? '--', icon: Users, color: '#FF8C00', bg: 'rgba(255,140,0,0.1)', sub: 'Employés enregistrés' },
-    { label: 'Contrats Actifs', value: stats?.contratsActifs ?? '--', icon: CheckCircle, color: '#27AE60', bg: 'rgba(39,174,96,0.1)', sub: 'En cours' },
-    { label: 'Taux Féminisation', value: stats ? `${stats.tauxFeminisation}%` : '--', icon: TrendingUp, color: '#3498DB', bg: 'rgba(52,152,219,0.1)', sub: `${stats?.femmes ?? 0} femmes` },
-    { label: 'Âge Moyen', value: stats ? `${stats.ageMoyen} ans` : '--', icon: Clock, color: '#9B59B6', bg: 'rgba(155,89,182,0.1)', sub: `Min ${stats?.ageMin ?? 0} · Max ${stats?.ageMax ?? 0}` },
+    { label: 'Effectif Total',      value: stats.total,             icon: Users,        color: '#FF8C00', bg: 'rgba(255,140,0,0.1)',    sub: 'Tous acteurs OF+AF' },
+    { label: 'Contrats Actifs',     value: stats.actifs,            icon: CheckCircle,  color: '#27AE60', bg: 'rgba(39,174,96,0.1)',    sub: 'En cours' },
+    { label: 'Taux Féminisation',   value: `${stats.tauxFem}%`,     icon: TrendingUp,   color: '#3498DB', bg: 'rgba(52,152,219,0.1)',   sub: `${stats.femmes} femmes` },
+    { label: 'Âge Moyen',          value: `${stats.ageMoyen} ans`, icon: Clock,        color: '#9B59B6', bg: 'rgba(155,89,182,0.1)',   sub: `Min ${stats.ageMin} · Max ${stats.ageMax}` },
   ];
 
-  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  // Export dropdown items (each section = stats + employee list in styled Excel)
+  const exportItems = [
+    { label: '📊 KPI Généraux',          fn: exports.kpi },
+    { label: '🗺️ Effectif par Région',   fn: exports.region },
+    { label: '👥 Genre',                  fn: exports.genre },
+    { label: '📐 Pyramide des Âges',      fn: exports.age },
+    { label: '📋 Types de Contrats',      fn: exports.contrats },
+    { label: '📅 Embauches Mensuelles',   fn: exports.embauches },
+    { label: "🎓 Niveau d'Éducation",     fn: exports.education },
+  ];
 
   return (
     <div className={`rd-container ${darkMode ? 'dark' : ''}`}>
-      {/* Sidebar */}
-      <aside className={`rd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-        <div className="rd-sidebar-top">
-          <div className="rd-logo">
-            {sidebarOpen && <span className="rd-logo-text">AFOR</span>}
-            <button className="rd-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-          </div>
-
-          <nav className="rd-nav">
-            <button className="rd-nav-item active">
-              <LayoutDashboard size={20} />
-              {sidebarOpen && <span>Tableau de Bord</span>}
-            </button>
-            <button className="rd-nav-item" onClick={() => navigate('/profile')}>
-              <User size={20} />
-              {sidebarOpen && <span>Profil</span>}
-            </button>
-          </nav>
-        </div>
-
-        <div className="rd-sidebar-bottom">
-          <button className="rd-nav-item" onClick={toggleDarkMode}>
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-            {sidebarOpen && <span>{darkMode ? 'Mode Clair' : 'Mode Sombre'}</span>}
-          </button>
-          <button className="rd-nav-item rd-logout" onClick={handleLogout}>
-            <LogOut size={20} />
-            {sidebarOpen && <span>Déconnexion</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main */}
       <main className="rd-main">
-        {/* Header */}
+
+        {/* ── Report toast ────────────────────────────────────── */}
+        {reportToast && (
+          <div style={{
+            position: 'fixed', top: 20, right: 20, zIndex: 9999,
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '12px 18px', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 600,
+            background: reportToast.type === 'success' ? '#27AE60' : '#E74C3C',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+          }}>
+            {reportToast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+            {reportToast.msg}
+          </div>
+        )}
+
+        {/* ── Header ─────────────────────────────────────────── */}
         <header className="rd-header">
           <div className="rd-header-left">
-            <h1 className="rd-title">Tableau de Bord</h1>
-            <p className="rd-subtitle">{today}</p>
+            <h1 className="rd-title">Tableau de Bord — Vue Responsable</h1>
+            <p className="rd-subtitle">{todayStr}</p>
           </div>
           <div className="rd-header-right">
-            <select
-              className="rd-filter-select"
-              value={filterContrats}
-              onChange={(e) => setFilterContrats(e.target.value as 'tous' | 'actifs' | 'inactifs')}
+            {/* Export dropdown */}
+            <div className="rd-export-wrap" ref={exportRef}>
+              <button className="rd-export-btn" onClick={() => setExportOpen(v => !v)}>
+                <Download size={15} />
+                Exporter
+                <ChevronDown size={13} style={{ marginLeft: 2, transform: exportOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+              </button>
+              {exportOpen && (
+                <div className="rd-export-dropdown">
+                  <div className="rd-export-meta-block">
+                    <p className="rd-export-meta-title">Exporter une section</p>
+                    <p className="rd-export-meta-sub">Chaque export inclut les statistiques + la liste des employés filtrée</p>
+                    <p className="rd-export-meta-filters">{filterLabel}</p>
+                  </div>
+                  <div className="rd-export-list">
+                    {exportItems.map(item => (
+                      <button key={item.label} className="rd-export-item" onClick={() => { item.fn(); setExportOpen(false); }}>
+                        <FileSpreadsheet size={12} />
+                        <span className="rd-export-item-label">{item.label}</span>
+                        <span className="rd-export-item-badge">xlsx</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="rd-export-divider" />
+                  <p className="rd-export-meta-title" style={{ marginBottom: 6 }}>Export complet</p>
+                  <button className="rd-export-all rd-export-excel" onClick={() => { exports.excel(); setExportOpen(false); }}>
+                    <FileSpreadsheet size={14} />
+                    <span>Tout — Excel multi-feuilles (.xlsx)</span>
+                    <span className="rd-export-item-badge" style={{ background: '#27AE60' }}>9 feuilles</span>
+                  </button>
+                  <button className="rd-export-all rd-export-pptx" onClick={() => { exports.pptx(); setExportOpen(false); }}>
+                    <Presentation size={14} />
+                    <span>Tout — PowerPoint (.pptx)</span>
+                    <span className="rd-export-item-badge" style={{ background: '#C0392B' }}>10 slides</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleSendReport}
+              disabled={sendingReport}
+              title="Envoyer le rapport par email maintenant"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '8px 14px', borderRadius: 8, border: 'none',
+                background: sendingReport ? '#ccc' : 'linear-gradient(135deg, #27AE60, #1e9952)',
+                color: '#fff', fontSize: '0.82rem', fontWeight: 700,
+                cursor: sendingReport ? 'not-allowed' : 'pointer',
+                boxShadow: '0 2px 8px rgba(39,174,96,0.3)',
+                transition: 'all 0.2s',
+              }}
             >
-              <option value="tous">Tous les employés</option>
-              <option value="actifs">Contrats actifs</option>
-              <option value="inactifs">Contrats expirés</option>
-            </select>
+              {sendingReport
+                ? <div style={{ width: 14, height: 14, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                : <Send size={14} />
+              }
+              {sendingReport ? 'Envoi…' : 'Envoyer rapport'}
+            </button>
+            <button className="rd-dark-btn" onClick={toggleDarkMode} title="Basculer le thème">
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
           </div>
         </header>
 
-        {/* KPI Row */}
+        {/* ── Filters bar ────────────────────────────────────── */}
+        <section className="rd-filters-bar">
+          <div className="rd-filter-group">
+            <Filter size={15} />
+            <select className="rd-filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value as 'tous' | 'actifs')}>
+              <option value="tous">Tous les employés</option>
+              <option value="actifs">Contrats actifs</option>
+            </select>
+          </div>
+          <div className="rd-filter-group">
+            <Building2 size={15} />
+            <select className="rd-filter-select" value={filterActeurId} onChange={e => setFilterActeurId(e.target.value)}>
+              <option value="">Tous les acteurs (OF+AF)</option>
+              {acteurs.map(a => <option key={a.id} value={a.id}>[{a.type_acteur}] {a.nom}</option>)}
+            </select>
+          </div>
+          <div className="rd-filter-group">
+            <Briefcase size={15} />
+            <select className="rd-filter-select" value={filterProjetId} onChange={e => setFilterProjetId(e.target.value)}>
+              <option value="">Tous les projets</option>
+              {projets.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
+            </select>
+          </div>
+          <div className="rd-filter-group rd-filter-search">
+            <Search size={15} />
+            <input className="rd-filter-input" placeholder="Rechercher un employé..." value={searchText} onChange={e => setSearchText(e.target.value)} />
+          </div>
+        </section>
+
+        {/* ── KPI Cards ──────────────────────────────────────── */}
         <section className="rd-kpi-grid">
           {kpiCards.map((k, i) => (
-            <div key={i} className="rd-kpi-card">
-              <div className="rd-kpi-icon" style={{ background: k.bg, color: k.color }}>
-                <k.icon size={22} />
-              </div>
+            <div key={i} className="rd-kpi-card" style={{ '--kpi-color': k.color } as React.CSSProperties}>
+              <div className="rd-kpi-icon" style={{ background: k.bg, color: k.color }}><k.icon size={22} /></div>
               <div className="rd-kpi-body">
                 <p className="rd-kpi-label">{k.label}</p>
                 <p className="rd-kpi-value">{loading ? '—' : k.value}</p>
@@ -385,7 +551,7 @@ export default function ResponsibleDashboard() {
           ))}
         </section>
 
-        {/* Charts Grid */}
+        {/* ── Charts Grid ────────────────────────────────────── */}
         <section className="rd-charts-grid">
 
           {/* Évolution effectifs */}
@@ -393,16 +559,11 @@ export default function ResponsibleDashboard() {
             <div className="rd-chart-header">
               <TrendingUp size={18} className="rd-chart-icon" />
               <h3>Évolution des Effectifs (12 mois)</h3>
+              <button className="rd-card-dl" onClick={exports.embauches} title="Exporter"><Download size={12} /></button>
             </div>
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={evolutionEffectifs} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#3a3a5c' : '#f0f0f0'} />
-                <XAxis dataKey="mois" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="effectif" stroke="#FF8C00" strokeWidth={2} dot={{ r: 3 }} name="Effectif" />
-              </LineChart>
-            </ResponsiveContainer>
+            <div style={{ position: 'relative', height: 260 }}>
+              <Line data={evolutionData} options={baseOpts()} />
+            </div>
           </div>
 
           {/* Effectif par région */}
@@ -410,16 +571,11 @@ export default function ResponsibleDashboard() {
             <div className="rd-chart-header">
               <MapPin size={18} className="rd-chart-icon" />
               <h3>Effectif par Région</h3>
+              <button className="rd-card-dl" onClick={exports.region} title="Exporter"><Download size={12} /></button>
             </div>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={effectifParRegion} margin={{ top: 5, right: 20, left: 0, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#3a3a5c' : '#f0f0f0'} />
-                <XAxis dataKey="region" tick={{ fontSize: 11 }} angle={-30} textAnchor="end" />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => [v, 'Effectif']} />
-                <Bar dataKey="effectif" fill="#FF8C00" radius={[4, 4, 0, 0]} name="Effectif" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ position: 'relative', height: 260 }}>
+              <Bar data={regionData} options={baseOptsRotated()} />
+            </div>
           </div>
 
           {/* Genre */}
@@ -427,35 +583,28 @@ export default function ResponsibleDashboard() {
             <div className="rd-chart-header">
               <Users size={18} className="rd-chart-icon" />
               <h3>Répartition par Genre</h3>
+              <button className="rd-card-dl" onClick={exports.genre} title="Exporter"><Download size={12} /></button>
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
-                <Pie data={genreData} cx="50%" cy="50%" outerRadius={85} dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}>
-                  {genreData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i]} />)}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <div style={{ position: 'relative', height: 200 }}>
+              <Doughnut data={genreData} options={donutOpts()} />
+            </div>
+            <div className="rd-donut-numbers">
+              <div><span style={{ color: '#3498DB', fontWeight: 700, fontSize: '1.5rem' }}>{stats.hommes}</span><br /><small style={{ color: tk }}>Hommes</small></div>
+              <div style={{ textAlign: 'center' }}><span style={{ color: darkMode ? '#e8edf3' : '#1f2d3d', fontWeight: 700, fontSize: '1.8rem' }}>{stats.total}</span><br /><small style={{ color: tk }}>Total</small></div>
+              <div style={{ textAlign: 'right' }}><span style={{ color: '#E74C3C', fontWeight: 700, fontSize: '1.5rem' }}>{stats.femmes}</span><br /><small style={{ color: tk }}>Femmes</small></div>
+            </div>
           </div>
 
-          {/* Groupes d'âge */}
+          {/* Pyramide des âges */}
           <div className="rd-chart-card">
             <div className="rd-chart-header">
               <BarChart3 size={18} className="rd-chart-icon" />
               <h3>Pyramide des Âges</h3>
+              <button className="rd-card-dl" onClick={exports.age} title="Exporter"><Download size={12} /></button>
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={groupeAge} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#3a3a5c' : '#f0f0f0'} />
-                <XAxis dataKey="tranche" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => [v, 'Employés']} />
-                <Bar dataKey="nombre" fill="#3498DB" radius={[4, 4, 0, 0]} name="Employés" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ position: 'relative', height: 220 }}>
+              <Bar data={ageData} options={baseOpts()} />
+            </div>
           </div>
 
           {/* Types de contrats */}
@@ -463,17 +612,16 @@ export default function ResponsibleDashboard() {
             <div className="rd-chart-header">
               <Briefcase size={18} className="rd-chart-icon" />
               <h3>Types de Contrats</h3>
+              <button className="rd-card-dl" onClick={exports.contrats} title="Exporter"><Download size={12} /></button>
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
-                <Pie data={contratsTypeData} cx="50%" cy="50%" outerRadius={85} dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
-                  {contratsTypeData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i]} />)}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <div style={{ position: 'relative', height: 200 }}>
+              <Doughnut data={contratsTypeData} options={donutOpts()} />
+            </div>
+            <div className="rd-donut-numbers">
+              <div><span style={{ color: '#27AE60', fontWeight: 700, fontSize: '1.4rem' }}>{stats.cdi}</span><br /><small style={{ color: tk }}>CDI</small></div>
+              <div style={{ textAlign: 'center' }}><span style={{ color: '#3498DB', fontWeight: 700, fontSize: '1.4rem' }}>{stats.cdd}</span><br /><small style={{ color: tk }}>CDD</small></div>
+              <div style={{ textAlign: 'right' }}><span style={{ color: '#9B59B6', fontWeight: 700, fontSize: '1.4rem' }}>{stats.consultant}</span><br /><small style={{ color: tk }}>Consult.</small></div>
+            </div>
           </div>
 
           {/* Embauches mensuelles */}
@@ -481,16 +629,11 @@ export default function ResponsibleDashboard() {
             <div className="rd-chart-header">
               <Calendar size={18} className="rd-chart-icon" />
               <h3>Embauches Mensuelles</h3>
+              <button className="rd-card-dl" onClick={exports.embauches} title="Exporter"><Download size={12} /></button>
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={embauchesMensuelles} margin={{ top: 5, right: 10, left: 0, bottom: 30 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#3a3a5c' : '#f0f0f0'} />
-                <XAxis dataKey="mois" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => [v, 'Embauches']} />
-                <Bar dataKey="nombre" fill="#27AE60" radius={[4, 4, 0, 0]} name="Embauches" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ position: 'relative', height: 220 }}>
+              <Bar data={embaucheData} options={baseOptsRotated()} />
+            </div>
           </div>
 
           {/* Niveau d'éducation */}
@@ -498,84 +641,73 @@ export default function ResponsibleDashboard() {
             <div className="rd-chart-header">
               <GraduationCap size={18} className="rd-chart-icon" />
               <h3>Niveau d'Éducation</h3>
+              <button className="rd-card-dl" onClick={exports.education} title="Exporter"><Download size={12} /></button>
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={niveauEducation} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#3a3a5c' : '#f0f0f0'} />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis dataKey="niveau" type="category" tick={{ fontSize: 10 }} width={60} />
-                <Tooltip formatter={(v) => [v, 'Employés']} />
-                <Bar dataKey="nombre" fill="#9B59B6" radius={[0, 4, 4, 0]} name="Employés" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ position: 'relative', height: 220 }}>
+              <Bar data={educData} options={{
+                indexAxis: 'y' as const, responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  x: { ticks: { color: tk, font: { size: 11 } }, grid: { color: gr } },
+                  y: { ticks: { color: tk, font: { size: 10 } }, grid: { color: gr } },
+                },
+              }} />
+            </div>
           </div>
 
-          {/* Statut contrats + Alertes échéances */}
+          {/* Statut contrats + Alertes */}
           <div className="rd-chart-card">
             <div className="rd-chart-header">
               <ClipboardList size={18} className="rd-chart-icon" />
               <h3>Statut des Contrats</h3>
+              <button className="rd-card-dl" onClick={exports.kpi} title="Exporter"><Download size={12} /></button>
             </div>
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie data={statutContratData} cx="50%" cy="50%" outerRadius={65} dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
-                  <Cell fill="#27AE60" />
-                  <Cell fill="#E74C3C" />
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-
-            <div className="rd-chart-header" style={{ marginTop: '16px' }}>
+            <div style={{ position: 'relative', height: 150 }}>
+              <Doughnut data={statutData} options={{ ...donutOpts('60%'), plugins: { legend: { position: 'bottom', labels: { color: tk, padding: 8, font: { size: 11 } } } } }} />
+            </div>
+            <div className="rd-donut-numbers" style={{ marginBottom: 8 }}>
+              <div><span style={{ color: '#27AE60', fontWeight: 700, fontSize: '1.4rem' }}>{stats.actifs}</span><br /><small style={{ color: tk }}>Actifs</small></div>
+              <div style={{ textAlign: 'right' }}><span style={{ color: '#E74C3C', fontWeight: 700, fontSize: '1.4rem' }}>{stats.expires}</span><br /><small style={{ color: tk }}>Expirés</small></div>
+            </div>
+            <div className="rd-chart-header" style={{ marginTop: 12 }}>
               <AlertTriangle size={18} style={{ color: '#F39C12', flexShrink: 0 }} />
-              <h3>Contrats Arrivant à Échéance</h3>
+              <h3>Contrats à Échéance</h3>
             </div>
             <div className="rd-alert-grid">
               <div className="rd-alert-item rd-alert-danger">
                 <AlertCircle size={16} />
-                <div>
-                  <p className="rd-alert-count">{loading ? '—' : contratsEcheance?.dans3mois}</p>
-                  <p className="rd-alert-label">Dans 3 mois</p>
-                </div>
+                <div><p className="rd-alert-count">{loading ? '—' : contratsEcheance.dans3mois}</p><p className="rd-alert-label">Dans 3 mois</p></div>
               </div>
               <div className="rd-alert-item rd-alert-warning">
                 <Clock size={16} />
-                <div>
-                  <p className="rd-alert-count">{loading ? '—' : contratsEcheance?.dans6mois}</p>
-                  <p className="rd-alert-label">Dans 6 mois</p>
-                </div>
+                <div><p className="rd-alert-count">{loading ? '—' : contratsEcheance.dans6mois}</p><p className="rd-alert-label">Dans 6 mois</p></div>
               </div>
               <div className="rd-alert-item rd-alert-info">
                 <Calendar size={16} />
-                <div>
-                  <p className="rd-alert-count">{loading ? '—' : contratsEcheance?.dans12mois}</p>
-                  <p className="rd-alert-label">Dans 12 mois</p>
-                </div>
+                <div><p className="rd-alert-count">{loading ? '—' : contratsEcheance.dans12mois}</p><p className="rd-alert-label">Dans 12 mois</p></div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Indicateurs RH */}
+        {/* ── Indicateurs RH ─────────────────────────────────── */}
         <section className="rd-section">
           <div className="rd-section-header">
             <Building2 size={18} className="rd-chart-icon" />
             <h2>Indicateurs RH</h2>
+            <button className="rd-card-dl" style={{ marginLeft: 'auto' }} onClick={exports.kpi} title="Exporter KPI"><Download size={12} /></button>
           </div>
           <div className="rd-info-grid">
             {[
-              { label: 'CDI', value: stats?.cdi, icon: CheckCircle, color: '#27AE60' },
-              { label: 'CDD', value: stats?.cdd, icon: Briefcase, color: '#3498DB' },
-              { label: 'Consultant', value: stats?.consultant, icon: User, color: '#9B59B6' },
-              { label: 'Taux de Renouvellement', value: stats ? `${stats.tauxRenouvellement}%` : '--', icon: TrendingUp, color: '#F39C12' },
-              { label: 'Ratio Permanent/Temp.', value: stats?.ratioPermanentTemporaire, icon: BarChart3, color: '#FF8C00' },
-              { label: 'Durée Moy. Contrats', value: stats ? `${stats.dureemoyenneContrats} mois` : '--', icon: Clock, color: '#E74C3C' },
+              { label: 'CDI',                   value: stats.cdi,                        icon: CheckCircle, color: '#27AE60' },
+              { label: 'CDD',                   value: stats.cdd,                        icon: Briefcase,   color: '#3498DB' },
+              { label: 'Consultant',            value: stats.consultant,                  icon: Users,       color: '#9B59B6' },
+              { label: 'Taux de Renouvellement',value: `${stats.tauxRenouvellement}%`,   icon: TrendingUp,  color: '#F39C12' },
+              { label: 'Ratio Permanent/Temp.', value: stats.ratioPermanentTemp,          icon: BarChart3,   color: '#FF8C00' },
+              { label: 'Durée Moy. Contrats',   value: `${stats.dureeMoy} mois`,         icon: Clock,       color: '#E74C3C' },
             ].map((item, i) => (
               <div key={i} className="rd-info-card">
-                <div className="rd-info-icon" style={{ color: item.color }}>
-                  <item.icon size={20} />
-                </div>
+                <div className="rd-info-icon" style={{ color: item.color }}><item.icon size={20} /></div>
                 <div>
                   <p className="rd-info-label">{item.label}</p>
                   <p className="rd-info-value">{loading ? '—' : item.value ?? '--'}</p>
@@ -585,48 +717,6 @@ export default function ResponsibleDashboard() {
           </div>
         </section>
 
-        {/* Couverture géographique */}
-        <section className="rd-section">
-          <div className="rd-section-header">
-            <AlertCircle size={18} style={{ color: '#E74C3C', flexShrink: 0 }} />
-            <h2>Couverture Géographique vs Objectifs</h2>
-          </div>
-          <div className="rd-coverage-table">
-            <div className="rd-coverage-head">
-              <span>Région</span>
-              <span>Objectif</span>
-              <span>Couverture</span>
-              <span>Déficit</span>
-              <span>Statut</span>
-            </div>
-            {loading ? (
-              <div className="rd-coverage-row"><span>Chargement...</span></div>
-            ) : zonesNonCouverte.length > 0 ? zonesNonCouverte.map((z, i) => (
-              <div key={i} className="rd-coverage-row">
-                <span className="rd-coverage-region">
-                  <ChevronRight size={14} />
-                  {z.region}
-                </span>
-                <span>{z.objectif}</span>
-                <span className="rd-progress-cell">
-                  <div className="rd-progress-bar">
-                    <div className="rd-progress-fill" style={{
-                      width: `${Math.min(z.couverture, 100)}%`,
-                      background: z.couverture >= 100 ? '#27AE60' : z.couverture >= 80 ? '#F39C12' : '#E74C3C'
-                    }} />
-                  </div>
-                  <span className="rd-progress-text">{z.couverture}%</span>
-                </span>
-                <span className={z.deficit > 0 ? 'rd-deficit' : 'rd-surplus'}>{z.deficit > 0 ? `-${z.deficit}` : '✓'}</span>
-                <span className={`rd-status-badge ${z.couverture >= 100 ? 'rd-ok' : z.couverture >= 80 ? 'rd-warn' : 'rd-crit'}`}>
-                  {z.couverture >= 100 ? 'Atteint' : z.couverture >= 80 ? 'Proche' : 'Critique'}
-                </span>
-              </div>
-            )) : (
-              <div className="rd-coverage-row"><span>Aucune donnée</span></div>
-            )}
-          </div>
-        </section>
       </main>
     </div>
   );

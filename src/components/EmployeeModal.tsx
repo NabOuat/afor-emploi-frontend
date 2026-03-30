@@ -352,7 +352,7 @@ export default function EmployeeModal({ employee, isOpen, onClose, darkMode }: E
                   <span class="info-label">Projets</span>
                   <div style="margin-top: 8px;">
                     ${employee.projets.map((projet: any) => `
-                      <div style="padding: 8px 12px; background: #f0f0f0; border-radius: 4px; margin-bottom: 6px; font-size: 0.95rem;">
+                      <div style="padding: 8px 12px; background: #fff3e0; border-radius: 4px; margin-bottom: 6px; font-size: 0.95rem; border-left: 3px solid #FF8C00; color: #e65100; font-weight: 600;">
                         ${projet.nom}
                       </div>
                     `).join('')}
@@ -553,10 +553,13 @@ export default function EmployeeModal({ employee, isOpen, onClose, darkMode }: E
                       {employee.projets.map((projet) => (
                         <div key={projet.id} style={{ 
                           padding: '8px 12px', 
-                          backgroundColor: '#f0f0f0', 
+                          backgroundColor: '#fff3e0', 
                           borderRadius: '4px', 
                           marginBottom: '6px',
-                          fontSize: '0.95rem'
+                          fontSize: '0.95rem',
+                          borderLeft: '3px solid #FF8C00',
+                          color: '#e65100',
+                          fontWeight: 600
                         }}>
                           {projet.nom}
                         </div>

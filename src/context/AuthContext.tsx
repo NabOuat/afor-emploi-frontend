@@ -107,7 +107,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAuthenticated: !!user,
     isLoading,
     error,
-    actorType: user?.actor_type || null,
+    actorType: user?.actor_type || sessionStorage.getItem('actor_type') || null,
     login,
     logout,
     clearError,
