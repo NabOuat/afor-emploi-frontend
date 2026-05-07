@@ -6,7 +6,6 @@ import { useDarkMode } from '../../hooks/useDarkMode';
 interface SettingsState {
   notifications: boolean;
   emailNotifications: boolean;
-  apiKey: string;
 }
 
 interface PasswordChangeForm {
@@ -20,7 +19,6 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsState>({
     notifications: true,
     emailNotifications: true,
-    apiKey: 'sk_live_****',
   });
 
   const [saveMessage, setSaveMessage] = useState('');
@@ -166,22 +164,6 @@ export default function SettingsPage() {
                   <Lock size={18} />
                   Changer le mot de passe
                 </button>
-              </div>
-
-              <div className="setting-group">
-                <div className="setting-header">
-                  <label>Clé API</label>
-                  <p className="setting-description">Votre clé API pour les intégrations</p>
-                </div>
-                <div className="api-key-display">
-                  <input
-                    type="password"
-                    value={settings.apiKey}
-                    readOnly
-                    className="setting-input"
-                  />
-                  <button className="btn-small">Copier</button>
-                </div>
               </div>
             </div>
           )}

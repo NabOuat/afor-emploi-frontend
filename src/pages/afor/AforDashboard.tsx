@@ -431,13 +431,30 @@ export default function AforDashboard() {
               <div className="chart-card">
                 <h3>Employés par Zone (Top 5) <span style={{ fontSize: '0.65rem', color: '#8a98b0', fontWeight: 400, textTransform: 'none' }}>— scroll · glisser</span></h3>
                 {employeesByZone.length > 0 ? (() => {
-                  const top5 = employeesByZone.slice(0, 5);
+                  const hasDept = employeesByZone.some(z => z.departement && z.departement.trim());
+                  type Row = { label: string; sublabel: string; count: number };
+                  let rows: Row[];
+                  if (hasDept) {
+                    rows = [...employeesByZone]
+                      .sort((a, b) => b.count - a.count).slice(0, 5)
+                      .map(z => ({ label: z.departement.trim(), sublabel: z.region, count: z.count }));
+                  } else {
+                    rows = Object.values(
+                      employeesByZone.reduce((acc, z) => {
+                        const k = z.region || 'Inconnu';
+                        if (!acc[k]) acc[k] = { label: k, sublabel: '', count: 0 };
+                        acc[k].count += z.count;
+                        return acc;
+                      }, {} as Record<string, Row>)
+                    ).sort((a, b) => b.count - a.count).slice(0, 5);
+                  }
+                  const truncate = (s: string, n = 22) => s.length > n ? s.slice(0, n) + '…' : s;
                   return (
-                    <div style={{ position: 'relative', height: 210 }}>
+                    <div style={{ position: 'relative', height: Math.max(180, rows.length * 44) }}>
                       <Bar
                         data={{
-                          labels: top5.map(z => z.region.length > 22 ? z.region.slice(0, 22) + '…' : z.region),
-                          datasets: [{ label: 'Employés', data: top5.map(z => z.count), backgroundColor: C.slice(0, top5.length), borderRadius: 6, borderSkipped: false }],
+                          labels: rows.map(r => truncate(hasDept ? `${r.label} · ${r.sublabel}` : r.label)),
+                          datasets: [{ label: 'Employés', data: rows.map(r => r.count), backgroundColor: C.slice(0, rows.length), borderRadius: 6, borderSkipped: false }],
                         }}
                         options={{
                           indexAxis: 'y' as const,
@@ -445,7 +462,12 @@ export default function AforDashboard() {
                           maintainAspectRatio: false,
                           plugins: {
                             legend: { display: false },
-                            tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
+                            tooltip: { callbacks: { label: (c) => {
+                              const r = rows[c.dataIndex];
+                              return r.sublabel
+                                ? ` ${c.parsed.x} employés — ${r.label}, ${r.sublabel}`
+                                : ` ${c.parsed.x} employés`;
+                            }}},
                             zoom: { zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }, pan: { enabled: true, mode: 'xy' } },
                           },
                           scales: {
