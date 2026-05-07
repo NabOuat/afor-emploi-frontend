@@ -268,7 +268,6 @@ export default function UsersManagement() {
             <div style={{ padding: '20px 24px' }}>
               <MError msg={formError} />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                {(['nom', 'Nom', 'Dupont'] as const) && null}
                 {([['nom','Nom','Dupont'],['prenom','Prénom','Jean']] as [string,string,string][]).map(([k,l,p]) => (
                   <div key={k}><label style={lbl}>{l}</label><input value={(form as any)[k]} onChange={e => setForm(f => ({...f,[k]:e.target.value}))} placeholder={p} style={inp} /></div>
                 ))}
