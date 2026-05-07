@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Globe, Plus, Trash2, Search, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 interface Zone {
   id: string;
@@ -15,6 +16,7 @@ interface Zone {
 interface Acteur  { id: string; nom: string; type_acteur: string; }
 interface Projet  { id: string; nom: string; nom_complet: string | null; }
 interface Region  { id: string; nom: string; }
+interface Toast   { type: 'success' | 'error'; message: string; }
 
 const TYPE_LABELS: Record<string, string> = { AD: 'Admin', AF: 'AFOR', OF: 'Opérateur', RESPO: 'Responsable' };
 const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
@@ -24,16 +26,34 @@ const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
   RESPO: { bg: 'rgba(39,174,96,0.12)',  color: '#27AE60' },
 };
 
-interface Toast { type: 'success' | 'error'; message: string; }
+function useTheme(dark: boolean) {
+  return {
+    page:        dark ? '#10141c' : '#f4f6f9',
+    card:        dark ? '#1c2333' : '#ffffff',
+    cardAlt:     dark ? '#1e2840' : '#fafbfc',
+    input:       dark ? '#252d3d' : '#ffffff',
+    inputBg:     dark ? '#252d3d' : '#f8fafc',
+    inputBorder: dark ? '#3a4560' : '#e8edf3',
+    border:      dark ? '#2e3a52' : '#e8edf3',
+    text:        dark ? '#e8edf3' : '#1f2d3d',
+    textSub:     dark ? '#8a98b0' : '#6b7a90',
+    textMuted:   dark ? '#4a5568' : '#c0c9d6',
+    theadBg:     dark ? '#252d3d' : '#f8fafc',
+    rowAlt:      dark ? '#1e2840' : '#fafbfc',
+  };
+}
 
 export default function ZonesManagement() {
   const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api$/, '');
+  const [dark] = useDarkMode();
+  const t = useTheme(dark);
 
   const [zones, setZones]     = useState<Zone[]>([]);
   const [acteurs, setActeurs] = useState<Acteur[]>([]);
   const [projets, setProjets] = useState<Projet[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
   const [search, setSearch]   = useState('');
   const [filterType, setFilterType] = useState('');
   const [toast, setToast]     = useState<Toast | null>(null);
@@ -51,19 +71,39 @@ export default function ZonesManagement() {
 
   const fetchData = async () => {
     setLoading(true);
+    setApiError('');
+    console.log('[Zones] apiUrl =', apiUrl);
     try {
-      const [z, a, p, r] = await Promise.all([
-        fetch(`${apiUrl}/api/zones-intervention/full`),
-        fetch(`${apiUrl}/api/acteurs`),
-        fetch(`${apiUrl}/api/projets`),
-        fetch(`${apiUrl}/api/geographic/regions`),
-      ]);
-      if (z.ok) setZones(await z.json());
-      if (a.ok) setActeurs(await a.json());
-      if (p.ok) setProjets(await p.json());
-      if (r.ok) setRegions(await r.json());
-    } catch { showToast('error', 'Erreur de chargement'); }
-    finally { setLoading(false); }
+      console.log('[Zones] → fetch zones-intervention/full');
+      const zRes = await fetch(`${apiUrl}/api/zones-intervention/full`);
+      console.log('[Zones] ← zones', zRes.status, zRes.ok);
+      if (zRes.ok) setZones(await zRes.json());
+      else setApiError(`Erreur zones (${zRes.status})`);
+    } catch (e: any) { console.error('[Zones] zones error:', e); setApiError(`Erreur zones : ${e?.message}`); }
+
+    try {
+      console.log('[Zones] → fetch acteurs');
+      const aRes = await fetch(`${apiUrl}/api/acteurs`);
+      console.log('[Zones] ← acteurs', aRes.status, aRes.ok);
+      if (aRes.ok) setActeurs(await aRes.json());
+    } catch (e: any) { console.error('[Zones] acteurs error:', e); }
+
+    try {
+      console.log('[Zones] → fetch projets');
+      const pRes = await fetch(`${apiUrl}/api/projets`);
+      console.log('[Zones] ← projets', pRes.status, pRes.ok);
+      if (pRes.ok) setProjets(await pRes.json());
+    } catch (e: any) { console.error('[Zones] projets error:', e); }
+
+    try {
+      console.log('[Zones] → fetch regions');
+      const rRes = await fetch(`${apiUrl}/api/geographic/regions`);
+      console.log('[Zones] ← regions', rRes.status, rRes.ok);
+      if (rRes.ok) setRegions(await rRes.json());
+    } catch (e: any) { console.error('[Zones] regions error:', e); }
+
+    console.log('[Zones] fetchData terminé');
+    setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -77,12 +117,7 @@ export default function ZonesManagement() {
     return m && (!filterType || z.type_acteur === filterType);
   });
 
-  const openCreate = () => {
-    setForm({ acteur_id: '', projet_id: '', region_id: '' });
-    setFormError('');
-    setModal('create');
-  };
-
+  const openCreate = () => { setForm({ acteur_id: '', projet_id: '', region_id: '' }); setFormError(''); setModal('create'); };
   const openDelete = (z: Zone) => { setSelected(z); setModal('delete'); };
   const closeModal = () => { setModal(null); setSelected(null); };
 
@@ -116,18 +151,15 @@ export default function ZonesManagement() {
     finally { setSaving(false); }
   };
 
+  const sel: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${t.inputBorder}`, fontSize: '0.9rem', background: t.input, color: t.text, cursor: 'pointer', boxSizing: 'border-box' };
+  const lbl: React.CSSProperties = { display: 'block', fontSize: '0.82rem', fontWeight: 600, color: t.text, marginBottom: 5 };
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f6f9', padding: '24px' }}>
+    <div style={{ minHeight: '100vh', background: t.page, padding: '24px' }}>
 
       {/* Toast */}
       {toast && (
-        <div style={{
-          position: 'fixed', top: 20, right: 20, zIndex: 9999,
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '12px 18px', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 600,
-          background: toast.type === 'success' ? '#27AE60' : '#E74C3C',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-        }}>
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 600, background: toast.type === 'success' ? '#27AE60' : '#E74C3C', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
           {toast.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
           {toast.message}
         </div>
@@ -136,66 +168,55 @@ export default function ZonesManagement() {
       {/* Header */}
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: '#1f2d3d' }}>Zones d'Intervention</h1>
-          <p style={{ margin: '4px 0 0', color: '#6b7a90', fontSize: '0.9rem' }}>
+          <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: t.text }}>Zones d'Intervention</h1>
+          <p style={{ margin: '4px 0 0', color: t.textSub, fontSize: '0.9rem' }}>
             Affectations Acteur → Projet → Région — {zones.length} affectation{zones.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button onClick={openCreate} style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '10px 20px', borderRadius: 9, border: 'none',
-          background: 'linear-gradient(135deg, #27AE60, #219a52)',
-          color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
-          boxShadow: '0 3px 10px rgba(39,174,96,0.3)',
-        }}>
+        <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #27AE60, #219a52)', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 3px 10px rgba(39,174,96,0.3)' }}>
           <Plus size={18} /> Nouvelle affectation
         </button>
       </div>
 
+      {/* API error banner */}
+      {apiError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: dark ? 'rgba(231,76,60,0.12)' : '#fff3cd', border: `1px solid ${dark ? 'rgba(231,76,60,0.3)' : '#ffc107'}`, borderRadius: 8, color: dark ? '#E74C3C' : '#856404', fontSize: '0.88rem', marginBottom: 16 }}>
+          <AlertCircle size={16} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1 }}>{apiError}</span>
+          <button onClick={fetchData} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#27AE60', color: '#fff', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>Réessayer</button>
+        </div>
+      )}
+
       {/* Filters */}
-      <div style={{
-        background: '#fff', borderRadius: 12, border: '1px solid #e8edf3',
-        padding: '14px 18px', marginBottom: 18,
-        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200,
-          background: '#f8fafc', border: '1px solid #e8edf3', borderRadius: 8, padding: '8px 12px' }}>
-          <Search size={16} color="#6b7a90" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Acteur, projet, région…"
-            style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', color: '#1f2d3d', width: '100%' }}
-          />
+      <div style={{ background: t.card, borderRadius: 12, border: `1px solid ${t.border}`, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200, background: t.inputBg, border: `1px solid ${t.inputBorder}`, borderRadius: 8, padding: '8px 12px' }}>
+          <Search size={16} color={t.textSub} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Acteur, projet, région…"
+            style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', color: t.text, width: '100%' }} />
         </div>
         <select value={filterType} onChange={e => setFilterType(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e8edf3', background: '#f8fafc', fontSize: '0.9rem', color: '#1f2d3d', cursor: 'pointer' }}>
+          style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${t.inputBorder}`, background: t.input, color: t.text, fontSize: '0.9rem', cursor: 'pointer' }}>
           <option value="">Tous les types</option>
           {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <span style={{ fontSize: '0.85rem', color: '#6b7a90', marginLeft: 'auto' }}>
-          {filtered.length} / {zones.length} affectation(s)
-        </span>
+        <span style={{ fontSize: '0.85rem', color: t.textSub, marginLeft: 'auto' }}>{filtered.length} / {zones.length} affectation(s)</span>
       </div>
 
       {/* Table */}
-      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8edf3', overflow: 'hidden' }}>
+      <div style={{ background: t.card, borderRadius: 12, border: `1px solid ${t.border}`, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#6b7a90' }}>Chargement…</div>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: t.textSub }}>Chargement…</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#6b7a90' }}>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: t.textSub }}>
             <Globe size={40} style={{ opacity: 0.3, marginBottom: 8 }} />
             <p style={{ margin: 0 }}>Aucune affectation trouvée. Créez la première.</p>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e8edf3' }}>
+              <tr style={{ background: t.theadBg, borderBottom: `2px solid ${t.border}` }}>
                 {['Acteur', 'Type', 'Projet', 'Région', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.8rem',
-                    fontWeight: 700, color: '#6b7a90', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                    {h}
-                  </th>
+                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -203,28 +224,27 @@ export default function ZonesManagement() {
               {filtered.map((z, i) => {
                 const col = z.type_acteur ? (TYPE_COLORS[z.type_acteur] || { bg: 'rgba(100,100,100,0.1)', color: '#666' }) : null;
                 return (
-                  <tr key={z.id} style={{ borderBottom: '1px solid #f0f4f8', background: i % 2 === 0 ? '#fff' : '#fafbfc' }}>
-                    <td style={{ padding: '13px 16px', fontWeight: 700, color: '#1f2d3d', fontSize: '0.9rem' }}>
-                      {z.acteur_nom || <span style={{ color: '#c0c9d6' }}>—</span>}
+                  <tr key={z.id} style={{ borderBottom: `1px solid ${t.border}`, background: i % 2 === 0 ? t.card : t.rowAlt }}>
+                    <td style={{ padding: '13px 16px', fontWeight: 700, color: t.text, fontSize: '0.9rem' }}>
+                      {z.acteur_nom || <span style={{ color: t.textMuted }}>—</span>}
                     </td>
                     <td style={{ padding: '13px 16px' }}>
                       {col && z.type_acteur ? (
                         <span style={{ padding: '4px 10px', borderRadius: 6, background: col.bg, color: col.color, fontSize: '0.78rem', fontWeight: 700 }}>
                           {TYPE_LABELS[z.type_acteur] || z.type_acteur}
                         </span>
-                      ) : <span style={{ color: '#c0c9d6' }}>—</span>}
+                      ) : <span style={{ color: t.textMuted }}>—</span>}
                     </td>
-                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: '#4a5568' }}>
-                      {z.projet_nom || <span style={{ color: '#c0c9d6' }}>—</span>}
+                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: t.textSub }}>
+                      {z.projet_nom || <span style={{ color: t.textMuted }}>—</span>}
                     </td>
-                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: '#4a5568' }}>
-                      {z.region_nom || <span style={{ color: '#c0c9d6', fontStyle: 'italic' }}>Nationale</span>}
+                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: t.textSub }}>
+                      {z.region_nom || <span style={{ color: t.textMuted, fontStyle: 'italic' }}>Nationale</span>}
                     </td>
                     <td style={{ padding: '13px 16px' }}>
-                      <button onClick={() => openDelete(z)} style={{
-                        padding: '6px 8px', borderRadius: 7, border: 'none',
-                        background: 'rgba(231,76,60,0.1)', color: '#E74C3C', cursor: 'pointer',
-                      }} title="Retirer"><Trash2 size={14} /></button>
+                      <button onClick={() => openDelete(z)} style={{ padding: '6px 8px', borderRadius: 7, border: 'none', background: 'rgba(231,76,60,0.1)', color: '#E74C3C', cursor: 'pointer' }} title="Retirer">
+                        <Trash2 size={14} />
+                      </button>
                     </td>
                   </tr>
                 );
@@ -236,16 +256,16 @@ export default function ZonesManagement() {
 
       {/* Create modal */}
       {modal === 'create' && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e8edf3' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div style={{ background: t.card, borderRadius: 14, width: '100%', maxWidth: 460, boxShadow: '0 24px 64px rgba(0,0,0,0.4)', border: `1px solid ${t.border}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: `1px solid ${t.border}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(39,174,96,0.12)', color: '#27AE60', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(39,174,96,0.15)', color: '#27AE60', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Globe size={18} />
                 </div>
-                <h3 style={{ margin: 0, fontWeight: 700, color: '#1f2d3d' }}>Nouvelle affectation</h3>
+                <h3 style={{ margin: 0, fontWeight: 700, color: t.text }}>Nouvelle affectation</h3>
               </div>
-              <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7a90', padding: 4 }}><X size={20} /></button>
+              <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.textSub, padding: 4 }}><X size={20} /></button>
             </div>
             <div style={{ padding: '20px 24px' }}>
               {formError && (
@@ -253,33 +273,23 @@ export default function ZonesManagement() {
                   <AlertCircle size={14} /> {formError}
                 </div>
               )}
-              {[
+              {([
                 { label: 'Acteur *', key: 'acteur_id', opts: acteurs.map(a => ({ v: a.id, l: `${a.nom} (${TYPE_LABELS[a.type_acteur] || a.type_acteur})` })) },
                 { label: 'Projet *', key: 'projet_id', opts: projets.map(p => ({ v: p.id, l: p.nom })) },
                 { label: 'Région (optionnel)', key: 'region_id', opts: regions.map(r => ({ v: r.id, l: r.nom })) },
-              ].map(({ label, key, opts }) => (
+              ] as { label: string; key: string; opts: { v: string; l: string }[] }[]).map(({ label, key, opts }) => (
                 <div key={key} style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#1f2d3d', marginBottom: 5 }}>{label}</label>
-                  <select value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e8edf3', fontSize: '0.9rem', background: '#fff', cursor: 'pointer', boxSizing: 'border-box' }}>
+                  <label style={lbl}>{label}</label>
+                  <select value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={sel}>
                     <option value="">— Sélectionner —</option>
                     {opts.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
                   </select>
                 </div>
               ))}
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-                <button onClick={closeModal} style={{ padding: '10px 20px', borderRadius: 9, border: '1px solid #e8edf3', background: '#fff', color: '#6b7a90', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
-                <button onClick={handleCreate} disabled={saving} style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 20px', borderRadius: 9, border: 'none',
-                  background: saving ? '#ccc' : 'linear-gradient(135deg, #27AE60, #219a52)',
-                  color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 3px 10px rgba(39,174,96,0.3)',
-                }}>
-                  {saving
-                    ? <div style={{ width: 14, height: 14, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                    : <Plus size={15} />
-                  }
+                <button onClick={closeModal} style={{ padding: '10px 20px', borderRadius: 9, border: `1px solid ${t.border}`, background: 'transparent', color: t.textSub, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
+                <button onClick={handleCreate} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 9, border: 'none', background: saving ? '#aaa' : 'linear-gradient(135deg, #27AE60, #219a52)', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                  {saving ? <div style={{ width: 14, height: 14, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> : <Plus size={15} />}
                   Créer
                 </button>
               </div>
@@ -290,21 +300,21 @@ export default function ZonesManagement() {
 
       {/* Delete modal */}
       {modal === 'delete' && selected && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 420, padding: '28px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div style={{ background: t.card, borderRadius: 14, width: '100%', maxWidth: 420, padding: '28px', boxShadow: '0 24px 64px rgba(0,0,0,0.4)', border: `1px solid ${t.border}` }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
               <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(231,76,60,0.1)', color: '#E74C3C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Trash2 size={24} />
               </div>
             </div>
-            <h3 style={{ margin: '0 0 8px', textAlign: 'center', color: '#1f2d3d', fontWeight: 700 }}>Retirer cette affectation ?</h3>
-            <p style={{ margin: '0 0 24px', textAlign: 'center', color: '#6b7a90', fontSize: '0.9rem' }}>
-              <strong>{selected.acteur_nom}</strong> → <strong>{selected.projet_nom}</strong>
+            <h3 style={{ margin: '0 0 8px', textAlign: 'center', color: t.text, fontWeight: 700 }}>Retirer cette affectation ?</h3>
+            <p style={{ margin: '0 0 24px', textAlign: 'center', color: t.textSub, fontSize: '0.9rem' }}>
+              <strong style={{ color: t.text }}>{selected.acteur_nom}</strong> → <strong style={{ color: t.text }}>{selected.projet_nom}</strong>
               {selected.region_nom && <><br />Région : {selected.region_nom}</>}
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={closeModal} style={{ flex: 1, padding: '10px', borderRadius: 9, border: '1px solid #e8edf3', background: '#fff', color: '#6b7a90', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
-              <button onClick={handleDelete} disabled={saving} style={{ flex: 1, padding: '10px', borderRadius: 9, border: 'none', background: saving ? '#ccc' : '#E74C3C', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+              <button onClick={closeModal} style={{ flex: 1, padding: '10px', borderRadius: 9, border: `1px solid ${t.border}`, background: 'transparent', color: t.textSub, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
+              <button onClick={handleDelete} disabled={saving} style={{ flex: 1, padding: '10px', borderRadius: 9, border: 'none', background: saving ? '#aaa' : '#E74C3C', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
                 {saving ? 'Suppression…' : 'Retirer'}
               </button>
             </div>
@@ -312,7 +322,7 @@ export default function ZonesManagement() {
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } } input::placeholder { color: ${dark ? '#4a5a70' : '#aab4c0'} }`}</style>
     </div>
   );
 }

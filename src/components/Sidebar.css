@@ -307,6 +307,11 @@
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  background: #f0f3f6;
+}
+
+html.dark-mode .sidebar-layout-content {
+  background: #10141c;
 }
 
 /* ---------- Desktop top bar (AppBar) ---------- */

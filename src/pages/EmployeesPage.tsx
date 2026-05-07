@@ -336,6 +336,43 @@ export default function EmployeesPage() {
     setIsCreateModalOpen(false);
   };
 
+  const handleCreateSuccess = (emp: any) => {
+    const statut: 'Contractuel' | 'Fonctionnaire' = emp.type_personne === 'Fonctionnaire' ? 'Fonctionnaire' : 'Contractuel';
+    const genre: 'M' | 'F' = (emp.genre === 'M' || emp.genre === 'F') ? emp.genre : 'M';
+
+    const newEmployee: Employee = {
+      id: emp.id || '',
+      nom: String(emp.nom || '').trim(),
+      prenom: String(emp.prenom || '').trim(),
+      matricule: emp.matricule && emp.matricule !== '-' ? emp.matricule : undefined,
+      qualification: String(emp.qualification || 'Inconnu').trim(),
+      poste: String(emp.poste || 'Non spécifié').trim(),
+      statut,
+      genre,
+      age: Number(emp.age) || 0,
+      date_naissance: emp.date_naissance || undefined,
+      contact: emp.contact && emp.contact !== '-' ? emp.contact : undefined,
+      diplome: emp.diplome && emp.diplome !== '-' ? emp.diplome : undefined,
+      ecole: emp.ecole && emp.ecole !== '-' && typeof emp.ecole === 'string' ? emp.ecole : undefined,
+      type_contrat: emp.type_contrat && emp.type_contrat !== '-' ? emp.type_contrat : undefined,
+      date_debut: emp.date_debut || undefined,
+      date_fin: emp.date_fin || undefined,
+      validiteContrat: emp.is_active ? 'En cours' : 'Expiré',
+      qualiteContrat: String(emp.categorie_poste || 'Indéterminée').trim(),
+      categorie_poste: emp.categorie_poste && emp.categorie_poste !== '-' ? emp.categorie_poste : undefined,
+      region: String(emp.region || '-').trim(),
+      departement: String(emp.departement || '-').trim(),
+      sousPrefecture: String(emp.sous_prefecture || '-').trim(),
+      projets: Array.isArray(emp.projets) ? emp.projets : [],
+    };
+
+    // Ajouter en fin de tableau : le .reverse() de la liste le placera en premier
+    setEmployees(prev => [...prev, newEmployee]);
+    setCurrentPage(1);
+    setSearchTerm('');
+    setSortField(null);
+  };
+
   const exportData = (format: 'csv' | 'pdf') => {
     const timestamp = new Date().toISOString().split('T')[0];
     const link = document.createElement('a');
@@ -931,6 +968,7 @@ export default function EmployeesPage() {
       <CreateEmployeeModal
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
+        onSuccess={handleCreateSuccess}
         darkMode={darkMode}
         acteurId={sessionStorage.getItem('acteur_id') || undefined}
       />
