@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Clock, AlertCircle, Upload, Users, TrendingUp, Download, X, Loader } from 'lucide-react';
+import { CheckCircle, AlertCircle, Upload, Users, TrendingUp, Download, X, Loader, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -63,6 +63,7 @@ export default function OperatorDashboard() {
   const [darkMode] = useDarkMode();
   const [filterType,        setFilterType]         = useState<'all' | 'active'>('all');
   const [isLoading,         setIsLoading]          = useState(true);
+  const [apiError,          setApiError]           = useState<string | null>(null);
   const [stats,             setStats]              = useState<DashboardStats | null>(null);
   const [employeesByPosition, setEmployeesByPosition] = useState<EmployeesByPosition[]>([]);
   const [employeesByZone,   setEmployeesByZone]    = useState<EmployeesByZone[]>([]);
@@ -101,11 +102,14 @@ export default function OperatorDashboard() {
     setMonthlyHires(d.monthly_hires);
   }, []);
 
-  const fetchDashboardData = useCallback(async (acteurId: string, filter: string = 'all') => {
-    const cached = getCache(acteurId, filter);
-    if (cached) { applyData(cached); setIsLoading(false); return; }
+  const fetchDashboardData = useCallback(async (acteurId: string, filter: string = 'all', forceRefresh = false) => {
+    if (!forceRefresh) {
+      const cached = getCache(acteurId, filter);
+      if (cached) { applyData(cached); setIsLoading(false); return; }
+    }
 
     setIsLoading(true);
+    setApiError(null);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -117,6 +121,9 @@ export default function OperatorDashboard() {
         applyData(data);
         return;
       }
+
+      // Endpoint combiné a échoué — log le code HTTP
+      const errCode = res.status;
 
       // ── Fallback : 9 endpoints parallèles (ancien comportement) ────────
       const [sR, pR, zR, cR, aR, prR, gR, agR, hR] = await Promise.all([
@@ -130,6 +137,13 @@ export default function OperatorDashboard() {
         fetch(`${apiUrl}/dashboard/operator/age-statistics/${acteurId}?filter_type=${filter}`),
         fetch(`${apiUrl}/dashboard/operator/monthly-hires/${acteurId}?months=12`),
       ]);
+
+      const anyOk = [sR, pR, zR, cR, aR, prR, gR, agR, hR].some(r => r.ok);
+      if (!anyOk) {
+        setApiError(`Impossible de contacter le serveur (code ${errCode}). Vérifiez que le backend est démarré.`);
+        return;
+      }
+
       const [sd, pd, zd, cd, ad, prd, gd, agd, hd] = await Promise.all([
         sR.ok  ? sR.json()  : Promise.resolve(null),
         pR.ok  ? pR.json()  : Promise.resolve([]),
@@ -151,10 +165,18 @@ export default function OperatorDashboard() {
       applyData(combined);
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);
+      setApiError('Serveur inaccessible — vérifiez que le backend est démarré sur le port 8000.');
     } finally {
       setIsLoading(false);
     }
   }, [applyData]);
+
+  const handleRefresh = () => {
+    const acteurId = sessionStorage.getItem('acteur_id');
+    if (!acteurId) return;
+    clearDashCache(acteurId);
+    fetchDashboardData(acteurId, filterType, true);
+  };
 
   useEffect(() => {
     const token    = sessionStorage.getItem('token');
@@ -247,11 +269,33 @@ export default function OperatorDashboard() {
               <option value="all">Tous les employés</option>
               <option value="active">Employés actifs</option>
             </select>
+            <button className="btn-primary" onClick={handleRefresh} title="Vider le cache et recharger"><RefreshCw size={18} />Rafraîchir</button>
             <button className="btn-primary" onClick={handleDownloadTemplate}><Download size={18} />Template</button>
             <button className="btn-primary" onClick={handleImportExcel}><Upload size={18} />Importer</button>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileChange} style={{ display: 'none' }} />
           </div>
         </div>
+
+        {/* Erreur API */}
+        {apiError && !isLoading && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+            background: '#fff2f0', border: '1px solid #fecaca', borderRadius: 10,
+            padding: '0.9rem 1.2rem', marginBottom: '1.5rem',
+            color: '#b91c1c', fontSize: '0.88rem', fontWeight: 500,
+          }}>
+            <AlertCircle size={18} style={{ flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>{apiError}</span>
+            <button onClick={handleRefresh} style={{
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
+              background: '#ef4444', color: 'white', border: 'none',
+              borderRadius: 7, padding: '0.4rem 0.85rem', cursor: 'pointer',
+              fontSize: '0.82rem', fontWeight: 600,
+            }}>
+              <RefreshCw size={14} /> Réessayer
+            </button>
+          </div>
+        )}
 
         {/* Loading */}
         {isLoading && (
@@ -416,13 +460,47 @@ export default function OperatorDashboard() {
               <div className="chart-card">
                 <h3>Employés par Zone (Top 5)</h3>
                 {employeesByZone.length > 0 ? (() => {
-                  const top5 = employeesByZone.slice(0, 5);
+                  // Si l'API renvoie des départements → afficher par département·région
+                  // Sinon (données manquantes) → agréger par région
+                  const hasDept = employeesByZone.some(z => z.departement && z.departement.trim());
+
+                  type Row = { label: string; sublabel: string; count: number };
+                  let rows: Row[];
+
+                  if (hasDept) {
+                    rows = [...employeesByZone]
+                      .sort((a, b) => b.count - a.count)
+                      .slice(0, 5)
+                      .map(z => ({
+                        label:    z.departement.trim(),
+                        sublabel: z.region,
+                        count:    z.count,
+                      }));
+                  } else {
+                    rows = Object.values(
+                      employeesByZone.reduce((acc, z) => {
+                        const k = z.region || 'Inconnu';
+                        if (!acc[k]) acc[k] = { label: k, sublabel: '', count: 0 };
+                        acc[k].count += z.count;
+                        return acc;
+                      }, {} as Record<string, Row>)
+                    ).sort((a, b) => b.count - a.count).slice(0, 5);
+                  }
+
+                  const truncate = (s: string, n = 22) => s.length > n ? s.slice(0, n) + '…' : s;
+
                   return (
-                    <div style={{ position: 'relative', height: 210 }}>
+                    <div style={{ position: 'relative', height: Math.max(180, rows.length * 44) }}>
                       <Bar
                         data={{
-                          labels: top5.map(z => z.region.length > 22 ? z.region.slice(0, 22) + '…' : z.region),
-                          datasets: [{ label: 'Employés', data: top5.map(z => z.count), backgroundColor: C.slice(0, top5.length), borderRadius: 6, borderSkipped: false }],
+                          labels: rows.map(r => truncate(hasDept ? `${r.label} · ${r.sublabel}` : r.label)),
+                          datasets: [{
+                            label: 'Employés',
+                            data: rows.map(r => r.count),
+                            backgroundColor: C.slice(0, rows.length),
+                            borderRadius: 6,
+                            borderSkipped: false,
+                          }],
                         }}
                         options={{
                           indexAxis: 'y' as const,
@@ -430,7 +508,12 @@ export default function OperatorDashboard() {
                           maintainAspectRatio: false,
                           plugins: {
                             legend: { display: false },
-                            tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} employés` } },
+                            tooltip: { callbacks: { label: (c) => {
+                              const r = rows[c.dataIndex];
+                              return r.sublabel
+                                ? ` ${c.parsed.x} employés — ${r.label}, ${r.sublabel}`
+                                : ` ${c.parsed.x} employés`;
+                            }}},
                           },
                           scales: {
                             x: { grid: { color: gr }, ticks: { color: tk } },

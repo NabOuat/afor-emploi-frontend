@@ -18,6 +18,7 @@ export interface User {
   username: string;
   nom?: string;
   prenom?: string;
+  email?: string;
   acteur_id: string;
   actor_type?: string;
 }

@@ -20,9 +20,10 @@ interface CreateEmployeeModalProps {
   onClose: () => void;
   darkMode: boolean;
   acteurId?: string;
+  onSuccess?: (newEmployee: any) => void;
 }
 
-export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurId }: CreateEmployeeModalProps) {
+export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurId, onSuccess }: CreateEmployeeModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [projets, setProjets] = useState<Projet[]>([]);
   const [selectedProjets, setSelectedProjets] = useState<string[]>([]);
@@ -376,13 +377,12 @@ export default function CreateEmployeeModal({ isOpen, onClose, darkMode, acteurI
         frontendLogger.logApiResponse('/employees/create', response.status, result);
         frontendLogger.info('EMPLOYEE_CREATE', `Employé ${result.nom} ${result.prenom} créé avec succès`, result);
         setSuccessMessage(`✅ Employé ${result.nom} ${result.prenom} créé avec succès!`);
-        
-        // Fermer le modal après 2 secondes et rafraîchir la page
+
         setTimeout(() => {
           resetForm();
           setSuccessMessage(null);
+          onSuccess?.(result);
           onClose();
-          window.location.reload();
         }, 2000);
       } else {
         const errorData = await response.json();

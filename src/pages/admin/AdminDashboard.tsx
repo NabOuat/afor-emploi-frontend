@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Users, Briefcase, TrendingUp, Download, Loader, FolderOpen } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Users, Briefcase, TrendingUp, Download, Loader, AlertCircle, RefreshCw } from 'lucide-react';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import '../../styles/AdminDashboard.css';
@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const [darkMode] = useDarkMode();
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
   const [dashData, setDashData] = useState<DashboardData | null>(null);
   const [activeChart, setActiveChart] = useState('region');
@@ -39,16 +40,40 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     setLoading(true);
+    setApiError(null);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       const [adminRes, dashRes] = await Promise.all([
         fetch(`${apiUrl}/dashboard/admin/stats`),
         fetch(`${apiUrl}/dashboard/operator/all/global`),
       ]);
-      if (adminRes.ok) setAdminStats(await adminRes.json());
-      if (dashRes.ok) setDashData(await dashRes.json());
-    } catch (err) {
-      console.error('Erreur chargement admin dashboard:', err);
+
+      if (adminRes.ok) {
+        const data = await adminRes.json();
+        setAdminStats(data);
+      } else {
+        console.error('admin/stats failed:', adminRes.status);
+      }
+
+      if (dashRes.ok) {
+        const data = await dashRes.json();
+        console.log('[AdminDashboard] dashData reçu:', {
+          zones: data.employees_by_zone?.length,
+          genres: data.employees_by_gender?.length,
+          postes: data.employees_by_position?.length,
+          projets: data.employees_by_project?.length,
+          ageGroups: data.age_statistics?.age_groups,
+          hires: data.monthly_hires?.length,
+        });
+        setDashData(data);
+      } else {
+        const errText = await dashRes.text();
+        console.error('operator/all/global failed:', dashRes.status, errText);
+        setApiError(`Erreur API ${dashRes.status}: ${errText.slice(0, 120)}`);
+      }
+    } catch (err: any) {
+      console.error('Erreur réseau admin dashboard:', err);
+      setApiError(`Erreur réseau: ${err?.message || 'impossible de joindre le serveur'}`);
     } finally {
       setLoading(false);
     }
@@ -105,6 +130,16 @@ export default function AdminDashboard() {
         <div className="welcome-section">
           <h2>Bienvenue {displayName}</h2>
         </div>
+
+        {apiError && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.9rem 1.2rem', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 4, color: '#856404', fontSize: '0.85rem' }}>
+            <AlertCircle size={18} style={{ flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>{apiError}</span>
+            <button onClick={fetchData} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#ffc107', border: 'none', borderRadius: 3, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>
+              <RefreshCw size={13} /> Réessayer
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
@@ -172,121 +207,155 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="charts-grid">
+              <div className="charts-grid" style={{ gridTemplateColumns: '1fr' }}>
+                {!dashData && !loading && (
+                  <div style={{ textAlign: 'center', padding: '3rem', color: '#8a98b0' }}>
+                    Aucune donnée disponible. Vérifiez que le serveur est démarré.
+                  </div>
+                )}
+
                 {activeChart === 'region' && (
                   <div className="chart-container">
-                    <h3>Répartition par Région</h3>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={regionData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="value" fill="#FF8C00" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <h3>Répartition par Région {regionData.length > 0 && `(${regionData.length} régions)`}</h3>
+                    {regionData.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '3rem', color: '#8a98b0' }}>Aucune donnée</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={regionData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="value" fill="#FF8C00" radius={[4, 4, 0, 0]} name="Employés" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 )}
 
                 {activeChart === 'departement' && (
                   <div className="chart-container">
-                    <h3>Répartition par Département</h3>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={deptData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="value" fill="#3498DB" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <h3>Répartition par Département (Top 10)</h3>
+                    {deptData.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '3rem', color: '#8a98b0' }}>Aucune donnée</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={deptData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="value" fill="#3498DB" radius={[4, 4, 0, 0]} name="Employés" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 )}
 
                 {activeChart === 'projet' && (
                   <div className="chart-container">
                     <h3>Employés par Projet</h3>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={projectData} layout="vertical" margin={{ left: 80 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
-                        <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={80} />
-                        <Tooltip />
-                        <Bar dataKey="value" fill="#27AE60" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {projectData.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '3rem', color: '#8a98b0' }}>Aucune donnée</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={Math.max(300, projectData.length * 50)}>
+                        <BarChart data={projectData} layout="vertical" margin={{ left: 120 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" />
+                          <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={120} />
+                          <Tooltip />
+                          <Bar dataKey="value" fill="#27AE60" radius={[0, 4, 4, 0]} name="Employés" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 )}
 
                 {activeChart === 'evolution' && (
                   <div className="chart-container">
                     <h3>Embauches Mensuelles (12 mois)</h3>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={hiresData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="mois" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#FF8C00" radius={[4, 4, 0, 0]} name="Embauches" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {hiresData.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '3rem', color: '#8a98b0' }}>Aucune donnée</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={hiresData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="mois" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="count" fill="#FF8C00" radius={[4, 4, 0, 0]} name="Embauches" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 )}
 
                 {activeChart === 'genre' && (
                   <div className="chart-container">
                     <h3>Répartition par Genre</h3>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <PieChart>
-                        <Pie
-                          data={genreData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, value }) => `${name}: ${value}`}
-                          outerRadius={120}
-                          dataKey="value"
-                        >
-                          {genreData.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    {genreData.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '3rem', color: '#8a98b0' }}>Aucune donnée</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={400}>
+                        <PieChart>
+                          <Pie
+                            data={genreData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, value }) => `${name}: ${value}`}
+                            outerRadius={150}
+                            dataKey="value"
+                          >
+                            {genreData.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 )}
 
                 {activeChart === 'age' && (
                   <div className="chart-container">
                     <h3>Tranches d'Âge</h3>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={ageData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="tranche" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#9B59B6" radius={[4, 4, 0, 0]} name="Employés" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {ageData.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '3rem', color: '#8a98b0' }}>Aucune donnée</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={ageData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="tranche" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="count" fill="#9B59B6" radius={[4, 4, 0, 0]} name="Employés" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 )}
 
                 {activeChart === 'poste' && (
                   <div className="chart-container">
-                    <h3>Répartition par Poste</h3>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <PieChart>
-                        <Pie
-                          data={posteData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ nom, count }) => `${nom}: ${count}`}
-                          outerRadius={120}
-                          dataKey="count"
-                        >
+                    <h3>Répartition par Poste (Top 6)</h3>
+                    {posteData.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '3rem', color: '#8a98b0' }}>Aucune donnée</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={400}>
+                        <PieChart>
+                          <Pie
+                            data={posteData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ nom, count }) => `${nom}: ${count}`}
+                            outerRadius={150}
+                            dataKey="count"
+                            nameKey="nom"
+                          >
                           {posteData.map((_, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
@@ -295,6 +364,7 @@ export default function AdminDashboard() {
                         <Legend />
                       </PieChart>
                     </ResponsiveContainer>
+                    )}
                   </div>
                 )}
               </div>

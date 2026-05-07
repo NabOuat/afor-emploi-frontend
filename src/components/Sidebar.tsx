@@ -38,6 +38,7 @@ function getNavItems(actorType: string | null): NavItem[] {
       return [
         { label: 'Tableau de bord', path: '/afor/dashboard', icon: LayoutDashboard },
         { label: 'Employés',        path: '/employees',      icon: Users },
+        { label: 'Utilisateurs',    path: '/admin/users',    icon: Users },
         { label: 'Paramètres',      path: '/afor/settings',  icon: Settings },
       ];
     case 'OF':
