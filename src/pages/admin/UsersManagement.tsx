@@ -82,7 +82,7 @@ export default function UsersManagement() {
     try {
       const [ur, ar] = await Promise.all([
         fetch(`${apiUrl}/api/auth/users`, { headers: { ...authService.getAuthHeader() } }),
-        fetch(`${apiUrl}/api/acteurs`),
+        fetch(`${apiUrl}/api/acteurs`, { headers: authService.getAuthHeader() }),
       ]);
       if (ur.ok) setUsers(await ur.json());
       if (ar.ok) setActeurs(await ar.json());

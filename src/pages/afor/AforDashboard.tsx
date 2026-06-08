@@ -10,6 +10,7 @@ import ZoomPlugin from 'chartjs-plugin-zoom';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import '../../styles/AforDashboard.css';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import authService from '../../services/authService';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler, ZoomPlugin);
 
@@ -111,15 +112,13 @@ export default function AforDashboard() {
     setIsLoading(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const url = `${apiUrl}/dashboard/operator/all/${acteurId}?filter_type=${filter}`;
-      console.log('[AFOR fetch] → envoi requête:', url);
+      const authHeaders = authService.getAuthHeader();
 
       // ── Essai endpoint combiné (optimisé) ──────────────────────────────
-      const res = await fetch(url);
-      console.log('[AFOR fetch] ← statut HTTP:', res.status, res.ok ? 'OK' : 'ERREUR');
+      const res = await fetch(`${apiUrl}/dashboard/operator/all/${acteurId}?filter_type=${filter}`, { headers: authHeaders });
+      if (res.status === 401) { navigate('/login'); return; }
       if (res.ok) {
         const data = await res.json();
-        console.log('[AFOR fetch] ← données reçues (clés):', Object.keys(data));
         setCache(acteurId, filter, data);
         applyData(data);
         return;
@@ -127,15 +126,15 @@ export default function AforDashboard() {
 
       // ── Fallback : 9 endpoints parallèles (ancien comportement) ────────
       const [sR, pR, zR, cR, aR, prR, gR, agR, hR] = await Promise.all([
-        fetch(`${apiUrl}/dashboard/operator/stats/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/employees-by-position/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/employees-by-zone/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/contract-status/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/average-contract-duration/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/employees-by-project/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/employees-by-gender/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/age-statistics/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/monthly-hires/${acteurId}?months=12`),
+        fetch(`${apiUrl}/dashboard/operator/stats/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/employees-by-position/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/employees-by-zone/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/contract-status/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/average-contract-duration/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/employees-by-project/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/employees-by-gender/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/age-statistics/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/monthly-hires/${acteurId}?months=12`, { headers: authHeaders }),
       ]);
       const [sd, pd, zd, cd, ad, prd, gd, agd, hd] = await Promise.all([
         sR.ok  ? sR.json()  : Promise.resolve(null),
@@ -156,8 +155,7 @@ export default function AforDashboard() {
       };
       setCache(acteurId, filter, combined);
       applyData(combined);
-    } catch (error) {
-      console.error('[AFOR fetch] EXCEPTION:', error);
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -174,7 +172,7 @@ export default function AforDashboard() {
   const handleDownloadTemplate = async () => {
     try {
       const apiUrl   = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const response = await fetch(`${apiUrl}/import-export/download-template`);
+      const response = await fetch(`${apiUrl}/import-export/download-template`, { headers: authService.getAuthHeader() });
       if (!response.ok) throw new Error('Erreur téléchargement');
       const blob = await response.blob();
       const url  = window.URL.createObjectURL(blob);
@@ -206,7 +204,7 @@ export default function AforDashboard() {
       const acteurId = sessionStorage.getItem('acteur_id');
       const apiUrl   = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       const response = await fetch(`${apiUrl}/import-export/import-employees?acteur_id=${acteurId}&projet_id=default`, {
-        method: 'POST', body: formData,
+        method: 'POST', headers: authService.getAuthHeader(), body: formData,
       });
       if (!response.ok) throw new Error('Erreur import');
       const result = await response.json();
@@ -215,7 +213,7 @@ export default function AforDashboard() {
       if (acteurId) {
         clearDashCache(acteurId);
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-        fetch(`${apiUrl}/dashboard/operator/cache/${acteurId}`, { method: 'DELETE' }).catch(() => {});
+        fetch(`${apiUrl}/dashboard/operator/cache/${acteurId}`, { method: 'DELETE', headers: authService.getAuthHeader() }).catch(() => {});
       }
       setTimeout(() => fetchDashboardData(filterType), 1000);
     } catch {

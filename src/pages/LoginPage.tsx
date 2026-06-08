@@ -61,7 +61,7 @@ export default function LoginPage() {
         <div className="brand-circle brand-circle-3" />
 
         <div className="brand-content">
-          <img src="/afor-logo.jpeg" alt="Afor Logo" className="brand-logo" />
+          <img src="/assets/images/logo.png" alt="AFOR Emploi" className="brand-logo" />
 
           <h2 className="brand-title">
             Bienvenue sur<br />AFOR Emploi
@@ -92,6 +92,7 @@ export default function LoginPage() {
         <div className="login-form-inner">
 
           <div className="login-header">
+            <img src="/assets/images/logo.png" alt="AFOR Emploi" className="form-logo" />
             <h1>Connexion</h1>
             <p className="tagline">Accédez à votre espace emploi</p>
           </div>

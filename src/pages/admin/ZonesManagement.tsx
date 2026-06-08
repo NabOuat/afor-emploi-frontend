@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Globe, Plus, Trash2, Search, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import authService from '../../services/authService';
 
 interface Zone {
   id: string;
@@ -72,37 +73,28 @@ export default function ZonesManagement() {
   const fetchData = async () => {
     setLoading(true);
     setApiError('');
-    console.log('[Zones] apiUrl =', apiUrl);
+    const authHeaders = authService.getAuthHeader();
     try {
-      console.log('[Zones] → fetch zones-intervention/full');
-      const zRes = await fetch(`${apiUrl}/api/zones-intervention/full`);
-      console.log('[Zones] ← zones', zRes.status, zRes.ok);
+      const zRes = await fetch(`${apiUrl}/api/zones-intervention/full`, { headers: authHeaders });
       if (zRes.ok) setZones(await zRes.json());
       else setApiError(`Erreur zones (${zRes.status})`);
-    } catch (e: any) { console.error('[Zones] zones error:', e); setApiError(`Erreur zones : ${e?.message}`); }
+    } catch (e: any) { setApiError(`Erreur zones : ${e?.message}`); }
 
     try {
-      console.log('[Zones] → fetch acteurs');
-      const aRes = await fetch(`${apiUrl}/api/acteurs`);
-      console.log('[Zones] ← acteurs', aRes.status, aRes.ok);
+      const aRes = await fetch(`${apiUrl}/api/acteurs`, { headers: authHeaders });
       if (aRes.ok) setActeurs(await aRes.json());
-    } catch (e: any) { console.error('[Zones] acteurs error:', e); }
+    } catch { }
 
     try {
-      console.log('[Zones] → fetch projets');
-      const pRes = await fetch(`${apiUrl}/api/projets`);
-      console.log('[Zones] ← projets', pRes.status, pRes.ok);
+      const pRes = await fetch(`${apiUrl}/api/projets`, { headers: authHeaders });
       if (pRes.ok) setProjets(await pRes.json());
-    } catch (e: any) { console.error('[Zones] projets error:', e); }
+    } catch { }
 
     try {
-      console.log('[Zones] → fetch regions');
-      const rRes = await fetch(`${apiUrl}/api/geographic/regions`);
-      console.log('[Zones] ← regions', rRes.status, rRes.ok);
+      const rRes = await fetch(`${apiUrl}/api/geographic/regions`, { headers: authHeaders });
       if (rRes.ok) setRegions(await rRes.json());
-    } catch (e: any) { console.error('[Zones] regions error:', e); }
+    } catch { }
 
-    console.log('[Zones] fetchData terminé');
     setLoading(false);
   };
 
@@ -128,7 +120,7 @@ export default function ZonesManagement() {
     try {
       const res = await fetch(`${apiUrl}/api/zones-intervention`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
         body: JSON.stringify({ acteur_id: form.acteur_id, projet_id: form.projet_id, region_id: form.region_id || null }),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); setFormError(e.detail || 'Erreur serveur.'); return; }
@@ -143,7 +135,7 @@ export default function ZonesManagement() {
     if (!selected) return;
     setSaving(true);
     try {
-      await fetch(`${apiUrl}/api/zones-intervention/${selected.id}`, { method: 'DELETE' });
+      await fetch(`${apiUrl}/api/zones-intervention/${selected.id}`, { method: 'DELETE', headers: authService.getAuthHeader() });
       showToast('success', 'Affectation retirée.');
       closeModal();
       fetchData();

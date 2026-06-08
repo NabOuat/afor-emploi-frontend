@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, CheckCircle, FolderOpen } from 'lucide-react';
+import authService from '../../services/authService';
 
 interface Projet {
   id: string;
@@ -32,7 +33,7 @@ export default function ProjectsManagement() {
   const fetchProjets = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/projets`);
+      const res = await fetch(`${apiUrl}/projets`, { headers: authService.getAuthHeader() });
       if (res.ok) setProjets(await res.json());
     } catch { showToast('error', 'Erreur de chargement'); }
     finally { setLoading(false); }
@@ -57,7 +58,7 @@ export default function ProjectsManagement() {
       const isEdit = modal === 'edit' && selected;
       const res = await fetch(isEdit ? `${apiUrl}/projets/${selected.id}` : `${apiUrl}/projets`, {
         method: isEdit ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
         body: JSON.stringify(form),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Erreur serveur'); }
@@ -72,7 +73,7 @@ export default function ProjectsManagement() {
     if (!selected) return;
     setSaving(true);
     try {
-      const res = await fetch(`${apiUrl}/projets/${selected.id}`, { method: 'DELETE' });
+      const res = await fetch(`${apiUrl}/projets/${selected.id}`, { method: 'DELETE', headers: authService.getAuthHeader() });
       if (!res.ok) throw new Error('Erreur lors de la suppression');
       showToast('success', `"${selected.nom}" supprimé`);
       closeModal();

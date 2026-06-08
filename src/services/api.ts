@@ -314,28 +314,12 @@ export const zoneInterventionAPI = {
 
 export const userAPI = {
   async login(email: string, password: string): Promise<{ token: string; user: any }> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!response.ok) throw new Error('Failed to login');
-      return response.json();
-    } catch (error) {
-      if (email && password) {
-        const demoToken = 'demo_token_' + Date.now();
-        const demoUser = {
-          id: '1',
-          email,
-          firstName: 'Demo',
-          lastName: 'User',
-          role: 'user',
-          createdAt: new Date().toISOString(),
-        };
-        return { token: demoToken, user: demoUser };
-      }
-      throw error;
-    }
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!response.ok) throw new Error('Failed to login');
+    return response.json();
   },
 };

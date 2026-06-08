@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, CheckCircle, Building2, Phone, Mail, MapPin } from 'lucide-react';
+import authService from '../../services/authService';
 
 interface Acteur {
   id: string;
@@ -59,7 +60,7 @@ export default function ActorsManagement() {
   const fetchActeurs = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/acteurs`);
+      const res = await fetch(`${apiUrl}/acteurs`, { headers: authService.getAuthHeader() });
       if (res.ok) setActeurs(await res.json());
     } catch { showToast('error', 'Erreur de chargement'); }
     finally { setLoading(false); }
@@ -105,7 +106,7 @@ export default function ActorsManagement() {
       const method = isEdit ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
         body: JSON.stringify(form),
       });
       if (!res.ok) {
@@ -124,7 +125,7 @@ export default function ActorsManagement() {
     if (!selected) return;
     setSaving(true);
     try {
-      const res = await fetch(`${apiUrl}/acteurs/${selected.id}`, { method: 'DELETE' });
+      const res = await fetch(`${apiUrl}/acteurs/${selected.id}`, { method: 'DELETE', headers: authService.getAuthHeader() });
       if (!res.ok) throw new Error('Erreur lors de la suppression');
       showToast('success', `"${selected.nom}" supprimé`);
       closeModal();

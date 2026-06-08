@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import authService from '../services/authService';
 import { Search, Edit2, Plus, Users, CheckCircle, Download, ChevronLeft, ChevronRight, Eye, MapPin, RefreshCw, ArrowUp, ArrowDown, BarChart2, FileText } from 'lucide-react';
 import EmployeeModal from '../components/EmployeeModal';
 import EditEmployeeModal from '../components/EditEmployeeModal';
@@ -48,6 +49,38 @@ interface Employee {
 type SortField = keyof Employee | null;
 type SortOrder = 'asc' | 'desc';
 
+function transformEmployees(data: any[]): Employee[] {
+  return data.map((emp) => {
+    const statut: 'Contractuel' | 'Fonctionnaire' = emp.type_personne === 'Fonctionnaire' ? 'Fonctionnaire' : 'Contractuel';
+    const genre: 'M' | 'F' = (emp.genre === 'M' || emp.genre === 'F') ? emp.genre : 'M';
+    return {
+      id: emp.id || '',
+      nom: String(emp.nom || '').trim(),
+      prenom: String(emp.prenom || '').trim(),
+      matricule: emp.matricule && emp.matricule !== '-' ? emp.matricule : undefined,
+      qualification: String(emp.qualification || 'Inconnu').trim(),
+      poste: String(emp.poste || 'Non spécifié').trim(),
+      statut,
+      genre,
+      age: Number(emp.age) || 0,
+      date_naissance: emp.date_naissance || undefined,
+      contact: emp.contact && emp.contact !== '-' ? emp.contact : undefined,
+      diplome: emp.diplome && emp.diplome !== '-' ? emp.diplome : undefined,
+      ecole: emp.ecole && emp.ecole !== '-' && typeof emp.ecole === 'string' ? emp.ecole : undefined,
+      type_contrat: emp.type_contrat && emp.type_contrat !== '-' ? emp.type_contrat : undefined,
+      date_debut: emp.date_debut || undefined,
+      date_fin: emp.date_fin || undefined,
+      validiteContrat: emp.is_active ? 'En cours' : 'Expiré',
+      qualiteContrat: String(emp.categorie_poste || 'Indéterminée').trim(),
+      categorie_poste: emp.categorie_poste && emp.categorie_poste !== '-' ? emp.categorie_poste : undefined,
+      region: String(emp.region || '-').trim(),
+      departement: String(emp.departement || '-').trim(),
+      sousPrefecture: String(emp.sous_prefecture || '-').trim(),
+      projets: Array.isArray(emp.projets) ? emp.projets : [],
+    };
+  });
+}
+
 export default function EmployeesPage() {
   const navigate = useNavigate();
   const { actorType } = useAuth();
@@ -92,55 +125,17 @@ export default function EmployeesPage() {
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         const url = isRespo
-          ? `${apiUrl}/employees/list-all`
-          : `${apiUrl}/employees/list/${acteurId}`;
-        const response = await fetch(url);
-        
-        
+          ? `${apiUrl}/employees/list-all?page_size=200`
+          : `${apiUrl}/employees/list/${acteurId}?page_size=200`;
+        const response = await fetch(url, { headers: { ...authService.getAuthHeader() } });
+
         if (response.ok) {
-          const data = await response.json();
-          
-          if (data && Array.isArray(data) && data.length > 0) {
-            // Transformer les données de l'API en Employee
-            const transformedEmployees = data.map((emp: any) => {
-              
-              const statut: 'Contractuel' | 'Fonctionnaire' = emp.type_personne === 'Fonctionnaire' ? 'Fonctionnaire' : 'Contractuel';
-              const genre: 'M' | 'F' = (emp.genre === 'M' || emp.genre === 'F') ? emp.genre : 'M';
-              
-              const transformed: Employee = {
-                id: emp.id || '',
-                nom: String(emp.nom || '').trim(),
-                prenom: String(emp.prenom || '').trim(),
-                matricule: emp.matricule && emp.matricule !== '-' ? emp.matricule : undefined,
-                qualification: String(emp.qualification || 'Inconnu').trim(),
-                poste: String(emp.poste || 'Non spécifié').trim(),
-                statut,
-                genre,
-                age: Number(emp.age) || 0,
-                date_naissance: emp.date_naissance || undefined,
-                contact: emp.contact && emp.contact !== '-' ? emp.contact : undefined,
-                diplome: emp.diplome && emp.diplome !== '-' ? emp.diplome : undefined,
-                ecole: emp.ecole && emp.ecole !== '-' && typeof emp.ecole === 'string' ? emp.ecole : undefined,
-                type_contrat: emp.type_contrat && emp.type_contrat !== '-' ? emp.type_contrat : undefined,
-                date_debut: emp.date_debut || undefined,
-                date_fin: emp.date_fin || undefined,
-                validiteContrat: emp.is_active ? 'En cours' : 'Expiré',
-                qualiteContrat: String(emp.categorie_poste || 'Indéterminée').trim(),
-                categorie_poste: emp.categorie_poste && emp.categorie_poste !== '-' ? emp.categorie_poste : undefined,
-                region: String(emp.region || '-').trim(),
-                departement: String(emp.departement || '-').trim(),
-                sousPrefecture: String(emp.sous_prefecture || '-').trim(),
-                projets: Array.isArray(emp.projets) ? emp.projets : [],
-              };
-              
-              return transformed;
-            });
-            setEmployees(transformedEmployees);
-            setIsLoading(false);
-          } else {
-            setEmployees([]);
-            setIsLoading(false);
-          }
+          const raw = await response.json();
+          // L'API retourne {items, total, page, pages} depuis la pagination server-side
+          const data: any[] = Array.isArray(raw) ? raw : (raw.items ?? []);
+
+          setEmployees(transformEmployees(data));
+          setIsLoading(false);
         } else {
           console.error('Erreur API:', response.status);
           const errorText = await response.text();
@@ -277,54 +272,20 @@ export default function EmployeesPage() {
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         const url = isRespo
-          ? `${apiUrl}/employees/list-all`
-          : `${apiUrl}/employees/list/${acteurId}`;
-        const response = await fetch(url);
-        
+          ? `${apiUrl}/employees/list-all?page_size=200`
+          : `${apiUrl}/employees/list/${acteurId}?page_size=200`;
+        const response = await fetch(url, { headers: { ...authService.getAuthHeader() } });
+
         if (response.ok) {
-          const data = await response.json();
-          
-          if (data && Array.isArray(data) && data.length > 0) {
-            const transformedEmployees = data.map((emp: any) => {
-              const statut: 'Contractuel' | 'Fonctionnaire' = emp.type_personne === 'Fonctionnaire' ? 'Fonctionnaire' : 'Contractuel';
-              const genre: 'M' | 'F' = (emp.genre === 'M' || emp.genre === 'F') ? emp.genre : 'M';
-              
-              return {
-                id: emp.id || '',
-                nom: String(emp.nom || '').trim(),
-                prenom: String(emp.prenom || '').trim(),
-                matricule: emp.matricule && emp.matricule !== '-' ? emp.matricule : undefined,
-                qualification: String(emp.qualification || 'Inconnu').trim(),
-                poste: String(emp.poste || 'Non spécifié').trim(),
-                statut,
-                genre,
-                age: Number(emp.age) || 0,
-                date_naissance: emp.date_naissance || undefined,
-                contact: emp.contact && emp.contact !== '-' ? emp.contact : undefined,
-                diplome: emp.diplome && emp.diplome !== '-' ? emp.diplome : undefined,
-                ecole: emp.ecole && emp.ecole !== '-' && typeof emp.ecole === 'string' ? emp.ecole : undefined,
-                type_contrat: emp.type_contrat && emp.type_contrat !== '-' ? emp.type_contrat : undefined,
-                date_debut: emp.date_debut || undefined,
-                date_fin: emp.date_fin || undefined,
-                validiteContrat: emp.is_active ? 'En cours' : 'Expiré',
-                qualiteContrat: String(emp.categorie_poste || 'Indéterminée').trim(),
-                categorie_poste: emp.categorie_poste && emp.categorie_poste !== '-' ? emp.categorie_poste : undefined,
-                region: String(emp.region || '-').trim(),
-                departement: String(emp.departement || '-').trim(),
-                sousPrefecture: String(emp.sous_prefecture || '-').trim(),
-                projets: Array.isArray(emp.projets) ? emp.projets : [],
-              };
-            });
-            setEmployees(transformedEmployees);
-          } else {
-            setEmployees([]);
-          }
+          const raw = await response.json();
+          const data: any[] = Array.isArray(raw) ? raw : (raw.items ?? []);
+          setEmployees(transformEmployees(data));
         }
       } catch (err) {
         console.error('Erreur lors du rechargement des employés:', err);
       }
     };
-    
+
     fetchEmployees();
   };
 

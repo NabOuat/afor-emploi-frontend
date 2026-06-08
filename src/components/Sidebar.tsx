@@ -136,7 +136,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       <div className="sidebar-logo-bar">
         {!collapsed && (
           <div className="sidebar-logo-content">
-            <img src="/afor-logo.jpeg" alt="AFOR" className="sidebar-logo-img" />
+            <img src="/assets/images/logo.png" alt="AFOR" className="sidebar-logo-img" />
             <span className="sidebar-logo-name">AFOR</span>
           </div>
         )}

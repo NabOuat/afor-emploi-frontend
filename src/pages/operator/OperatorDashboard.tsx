@@ -10,6 +10,7 @@ import ZoomPlugin from 'chartjs-plugin-zoom';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import '../../styles/OperatorDashboard.css';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import authService from '../../services/authService';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler, ZoomPlugin);
 
@@ -112,9 +113,11 @@ export default function OperatorDashboard() {
     setApiError(null);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const authHeaders = authService.getAuthHeader();
 
       // ── Essai endpoint combiné (optimisé) ──────────────────────────────
-      const res = await fetch(`${apiUrl}/dashboard/operator/all/${acteurId}?filter_type=${filter}`);
+      const res = await fetch(`${apiUrl}/dashboard/operator/all/${acteurId}?filter_type=${filter}`, { headers: authHeaders });
+      if (res.status === 401) { navigate('/login'); return; }
       if (res.ok) {
         const data = await res.json();
         setCache(acteurId, filter, data);
@@ -122,20 +125,19 @@ export default function OperatorDashboard() {
         return;
       }
 
-      // Endpoint combiné a échoué — log le code HTTP
       const errCode = res.status;
 
       // ── Fallback : 9 endpoints parallèles (ancien comportement) ────────
       const [sR, pR, zR, cR, aR, prR, gR, agR, hR] = await Promise.all([
-        fetch(`${apiUrl}/dashboard/operator/stats/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/employees-by-position/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/employees-by-zone/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/contract-status/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/average-contract-duration/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/employees-by-project/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/employees-by-gender/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/age-statistics/${acteurId}?filter_type=${filter}`),
-        fetch(`${apiUrl}/dashboard/operator/monthly-hires/${acteurId}?months=12`),
+        fetch(`${apiUrl}/dashboard/operator/stats/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/employees-by-position/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/employees-by-zone/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/contract-status/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/average-contract-duration/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/employees-by-project/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/employees-by-gender/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/age-statistics/${acteurId}?filter_type=${filter}`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/monthly-hires/${acteurId}?months=12`, { headers: authHeaders }),
       ]);
 
       const anyOk = [sR, pR, zR, cR, aR, prR, gR, agR, hR].some(r => r.ok);
@@ -163,8 +165,7 @@ export default function OperatorDashboard() {
       };
       setCache(acteurId, filter, combined);
       applyData(combined);
-    } catch (error) {
-      console.error('Erreur chargement dashboard:', error);
+    } catch {
       setApiError('Serveur inaccessible — vérifiez que le backend est démarré sur le port 8000.');
     } finally {
       setIsLoading(false);
@@ -188,7 +189,7 @@ export default function OperatorDashboard() {
   const handleDownloadTemplate = async () => {
     try {
       const apiUrl   = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const response = await fetch(`${apiUrl}/import-export/download-template`);
+      const response = await fetch(`${apiUrl}/import-export/download-template`, { headers: authService.getAuthHeader() });
       if (!response.ok) throw new Error('Erreur téléchargement');
       const blob = await response.blob();
       const url  = window.URL.createObjectURL(blob);
@@ -220,7 +221,7 @@ export default function OperatorDashboard() {
       const acteurId = sessionStorage.getItem('acteur_id');
       const apiUrl   = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       const response = await fetch(`${apiUrl}/import-export/import-employees?acteur_id=${acteurId}&projet_id=default`, {
-        method: 'POST', body: formData,
+        method: 'POST', headers: authService.getAuthHeader(), body: formData,
       });
       if (!response.ok) throw new Error('Erreur import');
       const result = await response.json();
@@ -229,7 +230,7 @@ export default function OperatorDashboard() {
       if (acteurId) {
         clearDashCache(acteurId);
         const apiUrl2 = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-        fetch(`${apiUrl2}/dashboard/operator/cache/${acteurId}`, { method: 'DELETE' }).catch(() => {});
+        fetch(`${apiUrl2}/dashboard/operator/cache/${acteurId}`, { method: 'DELETE', headers: authService.getAuthHeader() }).catch(() => {});
         setTimeout(() => fetchDashboardData(acteurId, filterType), 1000);
       }
     } catch {

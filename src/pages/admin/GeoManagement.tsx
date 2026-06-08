@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Plus, Trash2, Edit2, Search, X, Download, Upload, ChevronRight, AlertCircle, CheckCircle, Save } from 'lucide-react';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import authService from '../../services/authService';
 
 interface Region  { id: string; nom: string; }
 interface Dept    { id: string; nom: string; region_id: string; region_nom?: string; }
@@ -65,29 +66,22 @@ export default function GeoManagement() {
   const fetchAll = async () => {
     setLoading(true);
     setApiError('');
-    const url = `${apiUrl}/api/geographic/regions`;
-    console.log('[GeoManagement] apiUrl =', apiUrl);
-    console.log('[GeoManagement] fetching:', url);
+    const authHeaders = authService.getAuthHeader();
     try {
       const [rRes, dRes, sRes] = await Promise.all([
-        fetch(`${apiUrl}/api/geographic/regions`),
-        fetch(`${apiUrl}/api/geographic/departements`),
-        fetch(`${apiUrl}/api/geographic/sousprefectures`),
+        fetch(`${apiUrl}/api/geographic/regions`, { headers: authHeaders }),
+        fetch(`${apiUrl}/api/geographic/departements`, { headers: authHeaders }),
+        fetch(`${apiUrl}/api/geographic/sousprefectures`, { headers: authHeaders }),
       ]);
-      console.log('[GeoManagement] status regions:', rRes.status, 'ok:', rRes.ok);
-      console.log('[GeoManagement] status depts:', dRes.status, 'ok:', dRes.ok);
-      console.log('[GeoManagement] status sousps:', sRes.status, 'ok:', sRes.ok);
       const r: Region[] = rRes.ok ? await rRes.json() : [];
       const d: Dept[]   = dRes.ok ? await dRes.json() : [];
       const s: SousP[]  = sRes.ok ? await sRes.json() : [];
-      console.log('[GeoManagement] regions reçues:', r.length, '| depts:', d.length, '| sousps:', s.length);
       if (!rRes.ok) setApiError(`Erreur régions (${rRes.status})`);
       else if (r.length === 0 && d.length === 0) setApiError('API accessible mais aucune donnée reçue (tables vides ?)');
       setRegions(r);
       setDepts(d.map(dep => ({ ...dep, region_nom: r.find(x => x.id === dep.region_id)?.nom })));
       setSousPs(s.map(sp => ({ ...sp, dept_nom: d.find(x => x.id === sp.departement_id)?.nom })));
     } catch (e: any) {
-      console.error('[GeoManagement] fetch error:', e);
       setApiError(`Erreur réseau : ${e?.message || 'serveur inaccessible'}`);
     } finally {
       setLoading(false);
@@ -125,7 +119,7 @@ export default function GeoManagement() {
       body = isEdit ? { id: modal!.item.id, nom: formNom, departement_id: formParent } : { id: crypto.randomUUID(), nom: formNom, departement_id: formParent };
     }
     try {
-      const res = await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res = await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() }, body: JSON.stringify(body) });
       if (!res.ok) { const e = await res.json().catch(() => ({})); setFormError(e.detail || 'Erreur.'); return; }
       closeModal();
       showToast('success', isEdit ? 'Modifié avec succès.' : 'Créé avec succès.');
@@ -143,7 +137,7 @@ export default function GeoManagement() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await fetch(deleteTarget.endpoint, { method: 'DELETE' });
+      await fetch(deleteTarget.endpoint, { method: 'DELETE', headers: authService.getAuthHeader() });
       setDeleteTarget(null);
       showToast('success', `"${deleteTarget.nom}" supprimé.`);
       fetchAll();
@@ -161,7 +155,7 @@ export default function GeoManagement() {
     const fd = new FormData();
     fd.append('file', file);
     try {
-      const res = await fetch(`${apiUrl}/api/geographic/import-csv/${tab}`, { method: 'POST', body: fd });
+      const res = await fetch(`${apiUrl}/api/geographic/import-csv/${tab}`, { method: 'POST', headers: authService.getAuthHeader(), body: fd });
       if (res.ok) {
         const data = await res.json();
         setImportResult(data);

@@ -15,6 +15,7 @@ import {
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import '../../styles/ResponsibleDashboard.css';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import authService from '../../services/authService';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement,
@@ -79,9 +80,10 @@ export default function ResponsibleDashboard() {
 
   // ── Load filter options ─────────────────────────────────────
   useEffect(() => {
+    const authHeaders = authService.getAuthHeader();
     Promise.all([
-      fetch(`${apiUrl}/employees/acteurs-of-af`).then(r => r.json()).catch(() => []),
-      fetch(`${apiUrl}/employees/projets-all`).then(r => r.json()).catch(() => []),
+      fetch(`${apiUrl}/employees/acteurs-of-af`, { headers: authHeaders }).then(r => r.json()).catch(() => []),
+      fetch(`${apiUrl}/employees/projets-all`, { headers: authHeaders }).then(r => r.json()).catch(() => []),
     ]).then(([a, p]) => { setActeurs(a); setProjets(p); });
   }, [apiUrl]);
 
@@ -91,9 +93,9 @@ export default function ResponsibleDashboard() {
     if (filterActeurId) params.set('filter_acteur_id', filterActeurId);
     if (filterProjetId) params.set('filter_projet_id', filterProjetId);
     setLoading(true);
-    fetch(`${apiUrl}/employees/list-all?${params}`)
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setAllEmployees(Array.isArray(data) ? data : []))
+    fetch(`${apiUrl}/employees/list-all?${params}`, { headers: authService.getAuthHeader() })
+      .then(r => { if (r.status === 401) { window.location.href = '/login'; return null; } return r.ok ? r.json() : []; })
+      .then(data => { if (data !== null) setAllEmployees(Array.isArray(data) ? data : (data?.items ?? [])); })
       .catch(() => setAllEmployees([]))
       .finally(() => setLoading(false));
   }, [apiUrl, filterActeurId, filterProjetId]);
@@ -105,7 +107,7 @@ export default function ResponsibleDashboard() {
     try {
       const res = await fetch(`${apiUrl}/auth/send-test-report`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
         body: JSON.stringify({ username: user.username }),
       });
       if (!res.ok) {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Save, Lock, Palette, Shield, X } from 'lucide-react';
 import '../../styles/SettingsPage.css';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import authService from '../../services/authService';
 
 interface SettingsState {
   notifications: boolean;
@@ -46,7 +47,7 @@ export default function SettingsPage() {
     setPasswordError('');
   };
 
-  const handlePasswordSubmit = () => {
+  const handlePasswordSubmit = async () => {
     if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
       setPasswordError('Tous les champs sont requis');
       return;
@@ -59,11 +60,25 @@ export default function SettingsPage() {
       setPasswordError('Le mot de passe doit contenir au moins 8 caractères');
       return;
     }
-    console.log('Mot de passe changé');
-    setShowPasswordModal(false);
-    setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
-    setSaveMessage('Mot de passe changé avec succès!');
-    setTimeout(() => setSaveMessage(''), 3000);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const res = await fetch(`${apiUrl}/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
+        body: JSON.stringify({ old_password: passwordForm.oldPassword, new_password: passwordForm.newPassword }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setPasswordError(err.detail || 'Erreur lors du changement de mot de passe');
+        return;
+      }
+      setShowPasswordModal(false);
+      setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      setSaveMessage('Mot de passe changé avec succès !');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch {
+      setPasswordError('Erreur réseau — veuillez réessayer');
+    }
   };
 
   const handleClosePasswordModal = () => {

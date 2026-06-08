@@ -31,7 +31,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           <Menu size={22} />
         </button>
         <div className="mobile-topbar-logo">
-          <img src="/afor-logo.jpeg" alt="AFOR" />
+          <img src="/assets/images/logo.png" alt="AFOR" />
           <span>AFOR</span>
         </div>
       </div>

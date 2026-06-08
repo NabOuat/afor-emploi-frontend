@@ -3,6 +3,7 @@ import { Users, Briefcase, TrendingUp, Download, Loader, AlertCircle, RefreshCw 
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import authService from '../../services/authService';
 import '../../styles/AdminDashboard.css';
 
 interface AdminStats {
@@ -43,36 +44,29 @@ export default function AdminDashboard() {
     setApiError(null);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const authHeaders = authService.getAuthHeader();
       const [adminRes, dashRes] = await Promise.all([
-        fetch(`${apiUrl}/dashboard/admin/stats`),
-        fetch(`${apiUrl}/dashboard/operator/all/global`),
+        fetch(`${apiUrl}/dashboard/admin/stats`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/all/global`, { headers: authHeaders }),
       ]);
 
       if (adminRes.ok) {
-        const data = await adminRes.json();
-        setAdminStats(data);
-      } else {
-        console.error('admin/stats failed:', adminRes.status);
+        setAdminStats(await adminRes.json());
+      } else if (adminRes.status === 401) {
+        window.location.href = '/login';
+        return;
       }
 
       if (dashRes.ok) {
-        const data = await dashRes.json();
-        console.log('[AdminDashboard] dashData reçu:', {
-          zones: data.employees_by_zone?.length,
-          genres: data.employees_by_gender?.length,
-          postes: data.employees_by_position?.length,
-          projets: data.employees_by_project?.length,
-          ageGroups: data.age_statistics?.age_groups,
-          hires: data.monthly_hires?.length,
-        });
-        setDashData(data);
+        setDashData(await dashRes.json());
+      } else if (dashRes.status === 401) {
+        window.location.href = '/login';
+        return;
       } else {
         const errText = await dashRes.text();
-        console.error('operator/all/global failed:', dashRes.status, errText);
         setApiError(`Erreur API ${dashRes.status}: ${errText.slice(0, 120)}`);
       }
     } catch (err: any) {
-      console.error('Erreur réseau admin dashboard:', err);
       setApiError(`Erreur réseau: ${err?.message || 'impossible de joindre le serveur'}`);
     } finally {
       setLoading(false);
