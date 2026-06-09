@@ -2,21 +2,39 @@
    SIDEBAR UNIFIÉ – AFOR Emploi
    ============================================= */
 
+/* Animations fluides */
+@keyframes sidebarSlideIn {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes itemSlideIn {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeInSmooth {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* ---------- Sidebar ---------- */
 .app-sidebar {
   width: 240px;
   min-width: 240px;
-  background: #1f2d3d;
+  background: linear-gradient(180deg, #1a2332 0%, #0f1419 100%);
   color: #ecf0f1;
   display: flex;
   flex-direction: column;
   height: 100vh;
   position: sticky;
   top: 0;
-  transition: width 0.25s ease, min-width 0.25s ease;
+  transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), min-width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 200;
   overflow: hidden;
   flex-shrink: 0;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
+  animation: sidebarSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .app-sidebar.collapsed {
@@ -25,7 +43,7 @@
 }
 
 .app-sidebar.dark {
-  background: #12121e;
+  background: linear-gradient(180deg, #0f1419 0%, #0a0e27 100%);
 }
 
 /* ---------- Logo bar ---------- */
@@ -33,10 +51,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  min-height: 64px;
+  padding: 16px 16px;
+  border-bottom: 2px solid rgba(255, 140, 0, 0.15);
+  min-height: 68px;
   flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(255, 140, 0, 0.05) 0%, transparent 100%);
 }
 
 .app-sidebar.collapsed .sidebar-logo-bar {
@@ -56,6 +75,13 @@
   border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: fadeInSmooth 0.5s ease-out;
+}
+
+.sidebar-logo-img:hover {
+  transform: scale(1.05) rotate(2deg);
+  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2);
 }
 
 .sidebar-logo-name {
@@ -64,6 +90,8 @@
   color: #FF8C00;
   letter-spacing: 1px;
   white-space: nowrap;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: fadeInSmooth 0.6s ease-out 0.1s both;
 }
 
 .sidebar-collapse-btn {
@@ -71,18 +99,23 @@
   border: none;
   color: #7f8c8d;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
+  padding: 8px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .sidebar-collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: rgba(255, 140, 0, 0.1);
+  color: #FF8C00;
+  transform: scale(1.1);
+}
+
+.sidebar-collapse-btn:active {
+  transform: scale(0.95);
 }
 
 .mobile-only  { display: none; }
@@ -92,11 +125,12 @@
 .sidebar-user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 12px;
+  padding: 14px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
   overflow: hidden;
+  background: rgba(255, 140, 0, 0.03);
 }
 
 .sidebar-user-avatar {
@@ -140,15 +174,15 @@
   position: absolute;
   left: 100%;
   top: 0;
-  margin-left: 8px;
+  margin-left: 12px;
   background: #1f2d3d;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  padding: 12px;
-  width: 200px;
+  border: 2px solid rgba(255, 140, 0, 0.2);
+  border-radius: 12px;
+  padding: 14px;
+  width: 220px;
   z-index: 300;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  animation: fadeIn 0.15s ease;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .app-sidebar.dark .avatar-picker {
@@ -157,8 +191,14 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateX(-6px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from { 
+    opacity: 0; 
+    transform: translateX(-12px) scale(0.95);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0) scale(1);
+  }
 }
 
 .avatar-picker-title {
@@ -186,20 +226,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   color: #ecf0f1;
 }
 
 .avatar-option:hover {
-  border-color: rgba(255, 140, 0, 0.5);
-  background: rgba(255, 140, 0, 0.1);
-  transform: scale(1.08);
+  border-color: rgba(255, 140, 0, 0.6);
+  background: rgba(255, 140, 0, 0.12);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.15);
 }
 
 .avatar-option.active {
   border-color: #FF8C00;
-  background: rgba(255, 140, 0, 0.18);
-  box-shadow: 0 0 8px rgba(255, 140, 0, 0.3);
+  background: rgba(255, 140, 0, 0.2);
+  box-shadow: 0 0 12px rgba(255, 140, 0, 0.4);
+  transform: scale(1.05);
 }
 
 /* ---------- Nav body ---------- */
@@ -212,8 +254,11 @@
 }
 
 .sidebar-nav {
-  padding: 10px 0;
+  padding: 12px 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .sidebar-nav-item {
@@ -221,36 +266,44 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 11px 16px;
+  padding: 12px 16px;
   background: none;
   border: none;
-  border-right: 3px solid transparent;
+  border-left: 3px solid transparent;
   color: #8ea0b0;
   cursor: pointer;
   text-align: left;
   font-size: 0.88rem;
   font-weight: 500;
-  transition: background 0.18s, color 0.18s, border-color 0.18s;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   white-space: nowrap;
   overflow: hidden;
   font-family: inherit;
+  margin: 0 8px;
+  border-radius: 8px;
+  position: relative;
+  animation: itemSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .app-sidebar.collapsed .sidebar-nav-item {
   justify-content: center;
   padding: 12px;
   gap: 0;
+  margin: 4px 8px;
 }
 
 .sidebar-nav-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 140, 0, 0.1);
   color: #fff;
+  transform: translateX(4px);
+  box-shadow: inset 0 0 0 1px rgba(255, 140, 0, 0.2);
 }
 
 .sidebar-nav-item.active {
-  background: rgba(255, 140, 0, 0.12);
+  background: rgba(255, 140, 0, 0.15);
   color: #FF8C00;
-  border-right-color: #FF8C00;
+  border-left-color: #FF8C00;
+  box-shadow: inset -3px 0 0 #FF8C00, 0 4px 12px rgba(255, 140, 0, 0.15);
 }
 
 .sidebar-nav-item svg {
@@ -262,6 +315,117 @@
   text-overflow: ellipsis;
 }
 
+/* ---------- Collapsible groups ---------- */
+.sidebar-group {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0;
+}
+
+.sidebar-group-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  color: #8ea0b0;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  overflow: hidden;
+  font-family: inherit;
+  margin: 0 8px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-group-header:hover {
+  background: rgba(255, 140, 0, 0.1);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.sidebar-group-header.open {
+  background: rgba(255, 140, 0, 0.15);
+  color: #FF8C00;
+  border-left-color: #FF8C00;
+  box-shadow: inset 0 0 0 1px rgba(255, 140, 0, 0.2);
+}
+
+.sidebar-group-chevron {
+  margin-left: auto;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+}
+
+.sidebar-group-chevron.open {
+  transform: rotate(180deg);
+}
+
+.sidebar-submenu {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0 8px;
+  animation: submenuIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-left: 2px solid rgba(255, 140, 0, 0.25);
+  margin-left: 16px;
+}
+
+@keyframes submenuIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(-12px);
+    max-height: 0;
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0);
+    max-height: 1000px;
+  }
+}
+
+.sidebar-nav-item.sidebar-subitem {
+  font-size: 0.82rem;
+  padding: 10px 16px 10px 16px;
+  margin: 2px 0;
+  color: #7a8aa0;
+  border-left: none;
+  border-radius: 6px;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sidebar-nav-item.sidebar-subitem:hover {
+  background: rgba(255, 140, 0, 0.08);
+  color: #fff;
+  transform: translateX(4px);
+  box-shadow: inset 0 0 0 1px rgba(255, 140, 0, 0.15);
+}
+
+.sidebar-nav-item.sidebar-subitem svg {
+  opacity: 0.85;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-nav-item.sidebar-subitem:hover svg {
+  opacity: 1;
+}
+
+.sidebar-nav-item.sidebar-subitem.active {
+  background: rgba(255, 140, 0, 0.15);
+  color: #FF8C00;
+  border-left: 2px solid #FF8C00;
+  padding-left: 14px;
+  box-shadow: inset 0 0 0 1px rgba(255, 140, 0, 0.2);
+}
+
 /* ---------- Footer ---------- */
 .sidebar-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -270,12 +434,14 @@
 }
 
 .sidebar-nav-item.logout-item {
-  color: #e57373;
+  color: #ef4444;
+  border-left-color: transparent;
 }
 
 .sidebar-nav-item.logout-item:hover {
-  background: rgba(229, 115, 115, 0.1);
-  color: #ef9a9a;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border-left-color: #ef4444;
 }
 
 /* ---------- Scrollbar ---------- */
@@ -307,11 +473,11 @@
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  background: #f0f3f6;
+  background: #f5f7fa;
 }
 
 html.dark-mode .sidebar-layout-content {
-  background: #10141c;
+  background: #0a0e27;
 }
 
 /* ---------- Desktop top bar (AppBar) ---------- */
@@ -322,16 +488,18 @@ html.dark-mode .sidebar-layout-content {
   height: 56px;
   padding: 0 1.75rem;
   background: #ffffff;
-  border-bottom: 1px solid #e0e5ec;
+  border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .app-topbar.dark {
-  background: #1c2333;
-  border-bottom-color: #2a3347;
+  background: #0f1419;
+  border-bottom-color: #1a2332;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .app-topbar-title {

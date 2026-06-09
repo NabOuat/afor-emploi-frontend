@@ -67,14 +67,12 @@ export default function LoginPage() {
             Bienvenue sur<br />AFOR Emploi
           </h2>
 
-          <p className="brand-subtitle">
-            La plateforme de gestion de l'emploi et de la formation professionnelle en Côte d'Ivoire.
-          </p>
+
 
           <div className="brand-features">
             {[
-              'Gestion des offres d\'emploi',
-              'Suivi des formations professionnelles',
+              'Gestion des emplois',
+              'Suivi ',
               'Tableau de bord centralisé',
               'Rapports et statistiques en temps réel',
             ].map((item) => (
@@ -151,7 +149,7 @@ export default function LoginPage() {
           </form>
 
           <p className="login-footer">
-            © {new Date().getFullYear()} AFOR — Agence d'Études et de Promotion de l'Emploi
+            © {new Date().getFullYear()} AFOR - Tous droits réservés
           </p>
         </div>
       </div>

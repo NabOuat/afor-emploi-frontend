@@ -1,0 +1,236 @@
+/* =============================================
+   ENGAGEMENTS MANAGEMENT — AFOR Emploi (admin)
+   ============================================= */
+.eng-page {
+  --card:      #ffffff;
+  --bg:        #f4f6f9;
+  --border:    #e8edf3;
+  --text:      #1f2d3d;
+  --text-sub:  #6b7a90;
+  --accent:    #FF8C00;
+  --accent-bg: rgba(255, 140, 0, 0.12);
+  padding: 1.5rem 1.75rem;
+  color: var(--text);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+.eng-page.dark {
+  --card:      #1c2333;
+  --bg:        #0a0e27;
+  --border:    #2e3a52;
+  --text:      #e8edf3;
+  --text-sub:  #8a98b0;
+  --accent-bg: rgba(255, 140, 0, 0.16);
+}
+
+/* Header */
+.eng-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.eng-header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--accent);
+}
+.eng-header-title h1 { margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--text); }
+.eng-header-title p { margin: 2px 0 0; font-size: 0.85rem; color: var(--text-sub); }
+
+.eng-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.83rem;
+  margin-bottom: 1rem;
+}
+
+/* Grid */
+.eng-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 860px) { .eng-grid { grid-template-columns: 1fr; } }
+
+.eng-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+}
+.eng-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Buttons */
+.eng-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+.eng-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.eng-btn:active:not(:disabled) { transform: translateY(1px); }
+.eng-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.eng-btn.ghost {
+  background: transparent;
+  color: var(--text-sub);
+  border: 1px solid var(--border);
+}
+.eng-btn.ghost:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+
+.spin { animation: eng-spin 0.8s linear infinite; }
+@keyframes eng-spin { to { transform: rotate(360deg); } }
+
+/* Create / link forms */
+.eng-create, .eng-link-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.eng-create input, .eng-link-form select {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.86rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.eng-create input:focus, .eng-link-form select:focus { border-color: var(--accent); }
+
+/* Lists */
+.eng-list, .eng-liaisons { display: flex; flex-direction: column; gap: 8px; }
+.eng-loading, .eng-empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 0.85rem;
+}
+
+.eng-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.eng-item-info { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.eng-item-name { font-weight: 700; font-size: 0.88rem; }
+.eng-item-desc { font-size: 0.78rem; color: var(--text-sub); }
+
+.eng-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-sub);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+.eng-icon-btn.danger:hover { background: rgba(231, 76, 60, 0.12); color: #E74C3C; }
+
+/* Liaisons grouped by project */
+.eng-liaison-group {
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.eng-liaison-projet {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.eng-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.eng-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 10px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-radius: 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.eng-tag-x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 1px;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+.eng-tag-x:hover { background: rgba(231, 76, 60, 0.2); color: #E74C3C; }
+
+/* Toast */
+.eng-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+  animation: eng-toast-in 0.2s ease;
+}
+.eng-toast.success { background: #27AE60; }
+.eng-toast.error   { background: #E74C3C; }
+@keyframes eng-toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
