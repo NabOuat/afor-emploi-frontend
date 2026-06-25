@@ -1,0 +1,459 @@
+/* =============================================
+   DATABASE PAGE — AFOR Emploi (admin)
+   ============================================= */
+.db-page {
+  --bg:        #f4f6f9;
+  --card:      #ffffff;
+  --border:    #e8edf3;
+  --text:      #1f2d3d;
+  --text-sub:  #6b7a90;
+  --accent:    #FF8C00;
+  --accent-bg: rgba(255, 140, 0, 0.12);
+  padding: 1.5rem 1.75rem;
+  color: var(--text);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.db-page.dark {
+  --bg:        #0a0e27;
+  --card:      #1c2333;
+  --border:    #2e3a52;
+  --text:      #e8edf3;
+  --text-sub:  #8a98b0;
+  --accent-bg: rgba(255, 140, 0, 0.16);
+}
+
+/* ---------- Header ---------- */
+.db-header { margin-bottom: 1.25rem; }
+
+.db-header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--accent);
+}
+
+.db-header-title h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.db-header-title p {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-sub);
+}
+
+/* ---------- Tabs ---------- */
+.db-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.db-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: color 0.2s, border-color 0.2s;
+  margin-bottom: -1px;
+}
+
+.db-tab:hover { color: var(--text); }
+
+.db-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Section bar ---------- */
+.db-section-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.db-count {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.db-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Buttons ---------- */
+.db-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.1s;
+}
+
+.db-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.db-btn:active:not(:disabled) { transform: translateY(1px); }
+.db-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.db-btn.ghost {
+  background: transparent;
+  color: var(--text-sub);
+  border: 1px solid var(--border);
+}
+.db-btn.ghost:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.db-btn.sm {
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.spin { animation: db-spin 0.8s linear infinite; }
+@keyframes db-spin { to { transform: rotate(360deg); } }
+
+.db-loading {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-sub);
+}
+
+/* ---------- Tables grid ---------- */
+.db-table-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.db-table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.db-table-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.db-table-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.db-table-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.db-table-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.db-rows { font-size: 0.78rem; color: var(--text-sub); }
+
+/* ---------- Schema accordion ---------- */
+.db-schema-list { display: flex; flex-direction: column; gap: 8px; }
+
+.db-schema-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.db-schema-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+.db-schema-head:hover { background: var(--accent-bg); }
+.db-schema-head.open { color: var(--accent); }
+
+.db-schema-name { font-weight: 700; }
+.db-schema-colcount {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-sub);
+  font-weight: 500;
+}
+
+.db-chevron { transition: transform 0.2s; flex-shrink: 0; }
+.db-chevron.open { transform: rotate(180deg); }
+
+.db-schema-body { padding: 0 14px 14px; }
+
+.db-cols {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.db-cols th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--text-sub);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.db-cols td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.db-cols tr:last-child td { border-bottom: none; }
+
+.db-col-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+.db-pk { color: var(--accent); }
+.db-cols code {
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 0.76rem;
+}
+.db-col-default { color: var(--text-sub); }
+
+.db-fk-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.db-fk {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-sub);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+/* ---------- Import ---------- */
+.db-import-card {
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  padding: 2rem;
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.db-import-icon { color: var(--accent); }
+.db-import-card h2 {
+  margin: 12px 0 6px;
+  font-size: 1.15rem;
+  color: var(--text);
+}
+.db-import-card p {
+  margin: 0 auto 1.25rem;
+  font-size: 0.85rem;
+  color: var(--text-sub);
+  max-width: 460px;
+}
+.db-import-card code {
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.db-import-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.db-filename {
+  margin-top: 12px !important;
+  font-size: 0.8rem;
+  color: var(--text) !important;
+}
+
+.db-import-result {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 1.25rem auto 0;
+  max-width: 640px;
+}
+.db-result-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.db-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.db-stat.ok { color: #27AE60; }
+.db-stat.err { color: #E74C3C; }
+.db-stat.total { color: var(--text-sub); }
+
+.db-error-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 0.8rem;
+  color: #E74C3C;
+}
+.db-error-list li { margin-bottom: 3px; }
+
+/* ---------- Migration CSV ---------- */
+.db-migrate-form {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  max-width: 760px;
+  margin-bottom: 1.25rem;
+}
+.db-mig-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.db-mig-label {
+  width: 90px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+.db-mig-modes { display: flex; gap: 10px; flex-wrap: wrap; }
+.db-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: var(--text-sub);
+}
+.db-radio.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.db-mig-select {
+  flex: 1;
+  min-width: 220px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+.db-mig-note {
+  margin: -6px 0 14px 104px;
+  font-size: 0.78rem;
+  color: var(--text-sub);
+  font-style: italic;
+}
+.db-mig-file { font-size: 0.83rem; color: var(--text); }
+.db-mig-preview {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.db-mig-preview h3 { margin: 0 0 10px; font-size: 0.95rem; color: var(--text); }
+.db-mig-preview code {
+  background: var(--accent-bg); color: var(--accent);
+  padding: 1px 6px; border-radius: 5px; font-size: 0.82rem;
+}
+.db-mig-warn {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; color: #E67E22; margin: 0 0 10px;
+}
+.db-mig-table-wrap { overflow-x: auto; }
+
+/* ---------- Toast ---------- */
+.db-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+  animation: db-toast-in 0.2s ease;
+}
+.db-toast.success { background: #27AE60; }
+.db-toast.error   { background: #E74C3C; }
+@keyframes db-toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .db-page { padding: 1rem; }
+  .db-table-grid { grid-template-columns: 1fr 1fr; }
+}

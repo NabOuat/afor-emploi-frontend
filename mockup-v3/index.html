@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AFOR Emploi — Maquette V3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="light">
+
+  <!-- ══════════════════════════════════════════════
+       NAV DE NAVIGATION ENTRE LES VUES (maquette)
+  ══════════════════════════════════════════════ -->
+  <nav class="mockup-nav">
+    <span class="mockup-nav-title">🎨 Maquette V3</span>
+    <div class="mockup-nav-links">
+      <button onclick="showView('login')"        class="mnl active" id="btn-login">Login</button>
+      <button onclick="showView('admin')"        class="mnl" id="btn-admin">Admin</button>
+      <button onclick="showView('afor')"         class="mnl" id="btn-afor">AFOR</button>
+      <button onclick="showView('operator')"     class="mnl" id="btn-operator">Opérateur</button>
+      <button onclick="showView('responsible')"  class="mnl" id="btn-responsible">Responsable</button>
+      <button onclick="showView('employees')"    class="mnl" id="btn-employees">Employés</button>
+    </div>
+    <label class="toggle-dark">
+      <input type="checkbox" id="darkToggle" onchange="toggleDark()" />
+      <span>🌙 Dark</span>
+    </label>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       VUE : LOGIN
+  ══════════════════════════════════════════════ -->
+  <div id="view-login" class="view active">
+    <div class="login-wrap">
+      <div class="login-left">
+        <div class="login-brand">
+          <div class="login-logo-ring">
+            <div class="login-logo-inner">AE</div>
+          </div>
+          <h1>AFOR Emploi</h1>
+          <p class="login-sub">Plateforme de gestion du personnel et des contrats</p>
+        </div>
+        <div class="login-features">
+          <div class="lf-item"><span class="lf-dot"></span>Gestion des employés & contrats</div>
+          <div class="lf-item"><span class="lf-dot"></span>Suivi des projets et zones</div>
+          <div class="lf-item"><span class="lf-dot"></span>Tableau de bord centralisé</div>
+          <div class="lf-item"><span class="lf-dot"></span>Rapports et statistiques</div>
+        </div>
+        <div class="login-left-deco deco1"></div>
+        <div class="login-left-deco deco2"></div>
+      </div>
+      <div class="login-right">
+        <div class="login-form-card">
+          <div class="lfc-header">
+            <div class="lfc-avatar">AE</div>
+            <h2>Connexion</h2>
+            <p>Accédez à votre espace de travail</p>
+          </div>
+          <div class="form-field">
+            <label>Nom d'utilisateur</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              <input type="text" placeholder="votre_nom_utilisateur" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Mot de passe</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" placeholder="••••••••" />
+              <button class="eye-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn-primary w-full">Se connecter</button>
+          <p class="login-footer">© 2025 AFOR — Tous droits réservés DSG</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       LAYOUT AVEC SIDEBAR (partagé par tous les dashboards)
+  ══════════════════════════════════════════════ -->
+
+  <!-- ADMIN -->
+  <div id="view-admin" class="view">
+    <div class="app-layout">
+      <aside class="sidebar" id="sidebar-admin">
+        <div class="sb-header">
+          <div class="sb-logo"><span class="sb-logo-text">AE</span></div>
+          <span class="sb-title">AFOR Emploi</span>
+          <button class="sb-collapse-btn" onclick="toggleSidebar('admin')">‹</button>
+        </div>
+        <div class="sb-user">
+          <div class="sb-avatar" style="background:#FF8C00">AD</div>
+          <div class="sb-user-info">
+            <span class="sb-username">admin_user</span>
+            <span class="sb-role role-ad">Administrateur</span>
+          </div>
+        </div>
+        <nav class="sb-nav">
+          <a href="#" class="sb-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Tableau de bord</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21l1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg><span>Acteurs</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2M8 7V5a2 2 0 0 0-4 0v2"/></svg><span>Projets</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Utilisateurs</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>Zones</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>Géographie</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Employés</span></a>
+          <div class="sb-group">
+            <button class="sb-group-btn" onclick="toggleGroup(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              <span>Base de données</span>
+              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="sb-group-children hidden">
+              <a href="#" class="sb-link sub">Tables</a>
+              <a href="#" class="sb-link sub">Schéma</a>
+              <a href="#" class="sb-link sub">Importer</a>
+              <a href="#" class="sb-link sub">Migration CSV</a>
+            </div>
+          </div>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg><span>Paramètres</span></a>
+        </nav>
+        <div class="sb-footer">
+          <button class="sb-dark-btn" onclick="toggleDark()">🌙</button>
+          <button class="sb-logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Déconnexion</span></button>
+        </div>
+      </aside>
+      <main class="main-content">
+        <header class="page-header">
+          <div class="ph-left">
+            <h1 class="ph-title">Tableau de bord <span class="ph-role-badge role-ad">Admin</span></h1>
+            <p class="ph-sub">Vue globale de la plateforme AFOR Emploi</p>
+          </div>
+          <div class="ph-right">
+            <div class="ph-date">25 Juin 2025 — 08:14</div>
+            <button class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></button>
+          </div>
+        </header>
+
+        <!-- KPI Row -->
+        <div class="kpi-grid">
+          <div class="kpi-card accent-orange">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="kpi-body">
+              <span class="kpi-value">1 248</span>
+              <span class="kpi-label">Total Employés</span>
+              <span class="kpi-trend up">+12% ce mois</span>
+            </div>
+          </div>
+          <div class="kpi-card accent-blue">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2M8 7V5a2 2 0 0 0-4 0v2"/></svg></div>
+            <div class="kpi-body">
+              <span class="kpi-value">983</span>
+              <span class="kpi-label">Contrats actifs</span>
+              <span class="kpi-trend up">+8%</span>
+            </div>
+          </div>
+          <div class="kpi-card accent-green">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21l1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg></div>
+            <div class="kpi-body">
+              <span class="kpi-value">24</span>
+              <span class="kpi-label">Acteurs</span>
+              <span class="kpi-trend up">+2</span>
+            </div>
+          </div>
+          <div class="kpi-card accent-purple">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2M8 7V5a2 2 0 0 0-4 0v2"/></svg></div>
+            <div class="kpi-body">
+              <span class="kpi-value">18</span>
+              <span class="kpi-label">Projets actifs</span>
+              <span class="kpi-trend down">-1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-grid">
+          <div class="chart-card span2">
+            <div class="cc-header">
+              <h3>Employés par région</h3>
+              <div class="cc-tabs">
+                <button class="cc-tab active">Région</button>
+                <button class="cc-tab">Département</button>
+                <button class="cc-tab">Projet</button>
+              </div>
+            </div>
+            <div class="chart-placeholder bar-chart">
+              <div class="bar-group"><div class="bar" style="height:75%"><span>Abidjan</span></div><div class="bar-label">312</div></div>
+              <div class="bar-group"><div class="bar" style="height:55%"><span>Bouaké</span></div><div class="bar-label">229</div></div>
+              <div class="bar-group"><div class="bar" style="height:40%"><span>Daloa</span></div><div class="bar-label">168</div></div>
+              <div class="bar-group"><div class="bar" style="height:35%"><span>San-Pédro</span></div><div class="bar-label">146</div></div>
+              <div class="bar-group"><div class="bar" style="height:25%"><span>Korhogo</span></div><div class="bar-label">104</div></div>
+              <div class="bar-group"><div class="bar" style="height:20%"><span>Man</span></div><div class="bar-label">83</div></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="cc-header"><h3>Répartition par genre</h3></div>
+            <div class="donut-wrap">
+              <div class="donut">
+                <svg viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e8edf5" stroke-width="4"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#FF8C00" stroke-width="4" stroke-dasharray="65 35" stroke-dashoffset="25" stroke-linecap="round"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3498DB" stroke-width="4" stroke-dasharray="35 65" stroke-dashoffset="-40" stroke-linecap="round"/>
+                </svg>
+                <div class="donut-center"><span class="donut-val">65%</span><span class="donut-lbl">Homme</span></div>
+              </div>
+              <div class="donut-legend">
+                <div class="dl-item"><span class="dl-dot" style="background:#FF8C00"></span>Homme — 65%</div>
+                <div class="dl-item"><span class="dl-dot" style="background:#3498DB"></span>Femme — 35%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom row -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="cc-header"><h3>Recrutements mensuels</h3></div>
+            <div class="chart-placeholder line-chart">
+              <svg viewBox="0 0 300 100" preserveAspectRatio="none">
+                <defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF8C00" stop-opacity="0.3"/><stop offset="100%" stop-color="#FF8C00" stop-opacity="0"/></linearGradient></defs>
+                <path d="M0,80 L50,65 L100,50 L150,30 L200,45 L250,20 L300,35" fill="none" stroke="#FF8C00" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M0,80 L50,65 L100,50 L150,30 L200,45 L250,20 L300,35 L300,100 L0,100Z" fill="url(#lg1)"/>
+              </svg>
+              <div class="line-labels"><span>Jan</span><span>Fév</span><span>Mar</span><span>Avr</span><span>Mai</span><span>Juin</span></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="cc-header"><h3>Groupes d'âge</h3></div>
+            <div class="chart-placeholder bar-chart small">
+              <div class="bar-group"><div class="bar accent-blue" style="height:40%"><span>18-25</span></div><div class="bar-label">180</div></div>
+              <div class="bar-group"><div class="bar accent-orange" style="height:85%"><span>26-35</span></div><div class="bar-label">380</div></div>
+              <div class="bar-group"><div class="bar accent-green" style="height:70%"><span>36-45</span></div><div class="bar-label">312</div></div>
+              <div class="bar-group"><div class="bar accent-purple" style="height:45%"><span>46-55</span></div><div class="bar-label">200</div></div>
+              <div class="bar-group"><div class="bar" style="height:25%"><span>55+</span></div><div class="bar-label">112</div></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="cc-header"><h3>Contrats par statut</h3></div>
+            <div class="status-list">
+              <div class="sl-item"><div class="sl-bar"><div class="sl-fill" style="width:78%;background:#27AE60"></div></div><span class="sl-label">Actifs</span><span class="sl-val">983</span></div>
+              <div class="sl-item"><div class="sl-bar"><div class="sl-fill" style="width:14%;background:#E74C3C"></div></div><span class="sl-label">Expirés</span><span class="sl-val">175</span></div>
+              <div class="sl-item"><div class="sl-bar"><div class="sl-fill" style="width:8%;background:#F39C12"></div></div><span class="sl-label">À venir</span><span class="sl-val">90</span></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       VUE : AFOR DASHBOARD
+  ══════════════════════════════════════════════ -->
+  <div id="view-afor" class="view">
+    <div class="app-layout">
+      <aside class="sidebar" id="sidebar-afor">
+        <div class="sb-header">
+          <div class="sb-logo"><span class="sb-logo-text">AE</span></div>
+          <span class="sb-title">AFOR Emploi</span>
+          <button class="sb-collapse-btn" onclick="toggleSidebar('afor')">‹</button>
+        </div>
+        <div class="sb-user">
+          <div class="sb-avatar" style="background:#27AE60">AF</div>
+          <div class="sb-user-info">
+            <span class="sb-username">afor_user</span>
+            <span class="sb-role role-af">AFOR</span>
+          </div>
+        </div>
+        <nav class="sb-nav">
+          <a href="#" class="sb-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Tableau de bord</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Employés</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Utilisateurs</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg><span>Paramètres</span></a>
+        </nav>
+        <div class="sb-footer">
+          <button class="sb-dark-btn" onclick="toggleDark()">🌙</button>
+          <button class="sb-logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Déconnexion</span></button>
+        </div>
+      </aside>
+      <main class="main-content">
+        <header class="page-header">
+          <div class="ph-left">
+            <h1 class="ph-title">Tableau de bord <span class="ph-role-badge role-af">AFOR</span></h1>
+            <p class="ph-sub">Gestion nationale — vue agrégée de tous les opérateurs</p>
+          </div>
+          <div class="ph-right">
+            <div class="filter-pill-group">
+              <button class="filter-pill active">Tous</button>
+              <button class="filter-pill">Actifs</button>
+            </div>
+            <button class="btn-primary sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Importer CSV</button>
+            <button class="btn-outline sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exporter</button>
+          </div>
+        </header>
+
+        <div class="kpi-grid">
+          <div class="kpi-card accent-green">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">1 248</span><span class="kpi-label">Total Employés</span><span class="kpi-trend up">+12%</span></div>
+          </div>
+          <div class="kpi-card accent-blue">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">983</span><span class="kpi-label">Contrats actifs</span><span class="kpi-trend up">+8%</span></div>
+          </div>
+          <div class="kpi-card accent-orange">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">265</span><span class="kpi-label">+25 ans</span><span class="kpi-trend up">+5%</span></div>
+          </div>
+          <div class="kpi-card accent-red">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">47</span><span class="kpi-label">Contrats expirés</span><span class="kpi-trend down">Urgent</span></div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card span2">
+            <div class="cc-header"><h3>Employés par opérateur</h3></div>
+            <div class="chart-placeholder bar-chart">
+              <div class="bar-group"><div class="bar accent-green" style="height:85%"><span>ONG Alpha</span></div><div class="bar-label">350</div></div>
+              <div class="bar-group"><div class="bar accent-green" style="height:60%"><span>ONG Beta</span></div><div class="bar-label">248</div></div>
+              <div class="bar-group"><div class="bar accent-green" style="height:50%"><span>ONG Gamma</span></div><div class="bar-label">206</div></div>
+              <div class="bar-group"><div class="bar accent-green" style="height:35%"><span>ONG Delta</span></div><div class="bar-label">145</div></div>
+              <div class="bar-group"><div class="bar accent-green" style="height:25%"><span>Autres</span></div><div class="bar-label">299</div></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="cc-header"><h3>Statut des contrats</h3></div>
+            <div class="donut-wrap">
+              <div class="donut">
+                <svg viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e8edf5" stroke-width="4"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#27AE60" stroke-width="4" stroke-dasharray="78 22" stroke-dashoffset="25" stroke-linecap="round"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#E74C3C" stroke-width="4" stroke-dasharray="14 86" stroke-dashoffset="-53" stroke-linecap="round"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#F39C12" stroke-width="4" stroke-dasharray="8 92" stroke-dashoffset="-67" stroke-linecap="round"/>
+                </svg>
+                <div class="donut-center"><span class="donut-val">78%</span><span class="donut-lbl">Actifs</span></div>
+              </div>
+              <div class="donut-legend">
+                <div class="dl-item"><span class="dl-dot" style="background:#27AE60"></span>Actifs — 78%</div>
+                <div class="dl-item"><span class="dl-dot" style="background:#E74C3C"></span>Expirés — 14%</div>
+                <div class="dl-item"><span class="dl-dot" style="background:#F39C12"></span>À venir — 8%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card span3">
+            <div class="cc-header"><h3>Évolution des recrutements (12 mois)</h3></div>
+            <div class="chart-placeholder line-chart tall">
+              <svg viewBox="0 0 400 120" preserveAspectRatio="none">
+                <defs><linearGradient id="lg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#27AE60" stop-opacity="0.25"/><stop offset="100%" stop-color="#27AE60" stop-opacity="0"/></linearGradient></defs>
+                <path d="M0,90 L33,75 L66,80 L99,60 L132,65 L165,45 L198,50 L231,35 L264,40 L297,25 L330,30 L363,18 L396,22" fill="none" stroke="#27AE60" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M0,90 L33,75 L66,80 L99,60 L132,65 L165,45 L198,50 L231,35 L264,40 L297,25 L330,30 L363,18 L396,22 L396,120 L0,120Z" fill="url(#lg2)"/>
+              </svg>
+              <div class="line-labels"><span>Juil</span><span>Aoû</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Déc</span><span>Jan</span><span>Fév</span><span>Mar</span><span>Avr</span><span>Mai</span><span>Juin</span></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       VUE : OPERATOR DASHBOARD
+  ══════════════════════════════════════════════ -->
+  <div id="view-operator" class="view">
+    <div class="app-layout">
+      <aside class="sidebar" id="sidebar-operator">
+        <div class="sb-header">
+          <div class="sb-logo"><span class="sb-logo-text">AE</span></div>
+          <span class="sb-title">AFOR Emploi</span>
+          <button class="sb-collapse-btn" onclick="toggleSidebar('operator')">‹</button>
+        </div>
+        <div class="sb-user">
+          <div class="sb-avatar" style="background:#3498DB">OF</div>
+          <div class="sb-user-info">
+            <span class="sb-username">operateur_1</span>
+            <span class="sb-role role-of">Opérateur</span>
+          </div>
+        </div>
+        <nav class="sb-nav">
+          <a href="#" class="sb-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Tableau de bord</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Employés</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg><span>Paramètres</span></a>
+        </nav>
+        <div class="sb-footer">
+          <button class="sb-dark-btn" onclick="toggleDark()">🌙</button>
+          <button class="sb-logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Déconnexion</span></button>
+        </div>
+      </aside>
+      <main class="main-content">
+        <header class="page-header">
+          <div class="ph-left">
+            <h1 class="ph-title">Tableau de bord <span class="ph-role-badge role-of">Opérateur</span></h1>
+            <p class="ph-sub">Mon organisation — ONG Alpha Formation</p>
+          </div>
+          <div class="ph-right">
+            <button class="btn-primary sm">Importer CSV</button>
+            <button class="btn-outline sm">Exporter</button>
+            <button class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg></button>
+          </div>
+        </header>
+
+        <div class="kpi-grid">
+          <div class="kpi-card accent-blue">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">350</span><span class="kpi-label">Mes employés</span><span class="kpi-trend up">+18</span></div>
+          </div>
+          <div class="kpi-card accent-green">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">298</span><span class="kpi-label">Contrats actifs</span><span class="kpi-trend up">+6%</span></div>
+          </div>
+          <div class="kpi-card accent-orange">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">124</span><span class="kpi-label">+25 ans</span><span class="kpi-trend up">+3%</span></div>
+          </div>
+          <div class="kpi-card accent-red">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">14</span><span class="kpi-label">Contrats expirés</span><span class="kpi-trend down">À renouveler</span></div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card span2">
+            <div class="cc-header"><h3>Mes employés par poste</h3></div>
+            <div class="chart-placeholder bar-chart">
+              <div class="bar-group"><div class="bar accent-blue" style="height:80%"><span>Formateur</span></div><div class="bar-label">142</div></div>
+              <div class="bar-group"><div class="bar accent-blue" style="height:55%"><span>Superviseur</span></div><div class="bar-label">98</div></div>
+              <div class="bar-group"><div class="bar accent-blue" style="height:40%"><span>Agent</span></div><div class="bar-label">70</div></div>
+              <div class="bar-group"><div class="bar accent-blue" style="height:25%"><span>Admin</span></div><div class="bar-label">40</div></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="cc-header"><h3>Genre</h3></div>
+            <div class="donut-wrap">
+              <div class="donut">
+                <svg viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e8edf5" stroke-width="4"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3498DB" stroke-width="4" stroke-dasharray="58 42" stroke-dashoffset="25" stroke-linecap="round"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#FF8C00" stroke-width="4" stroke-dasharray="42 58" stroke-dashoffset="-33" stroke-linecap="round"/>
+                </svg>
+                <div class="donut-center"><span class="donut-val">58%</span><span class="donut-lbl">Homme</span></div>
+              </div>
+              <div class="donut-legend">
+                <div class="dl-item"><span class="dl-dot" style="background:#3498DB"></span>Homme — 58%</div>
+                <div class="dl-item"><span class="dl-dot" style="background:#FF8C00"></span>Femme — 42%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card span2">
+            <div class="cc-header"><h3>Projets en cours</h3></div>
+            <div class="project-list">
+              <div class="proj-item"><div class="proj-name">Projet Jeunesse 2025</div><div class="proj-bar"><div class="proj-fill" style="width:72%;background:#3498DB"></div></div><span class="proj-count">72 emp.</span><span class="proj-status active">Actif</span></div>
+              <div class="proj-item"><div class="proj-name">Formation Pro Abidjan</div><div class="proj-bar"><div class="proj-fill" style="width:45%;background:#27AE60"></div></div><span class="proj-count">45 emp.</span><span class="proj-status active">Actif</span></div>
+              <div class="proj-item"><div class="proj-name">Emploi Rural Nord</div><div class="proj-bar"><div class="proj-fill" style="width:30%;background:#F39C12"></div></div><span class="proj-count">30 emp.</span><span class="proj-status warn">En attente</span></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="cc-header"><h3>Durée moyenne contrat</h3></div>
+            <div class="big-stat-wrap">
+              <div class="big-stat"><span class="bs-val">8.4</span><span class="bs-unit">mois</span></div>
+              <div class="bs-sub">Basé sur 298 contrats actifs</div>
+              <div class="bs-breakdown">
+                <div class="bsb-item"><span>Min</span><strong>1 mois</strong></div>
+                <div class="bsb-item"><span>Max</span><strong>24 mois</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       VUE : RESPONSABLE DASHBOARD
+  ══════════════════════════════════════════════ -->
+  <div id="view-responsible" class="view">
+    <div class="app-layout">
+      <aside class="sidebar" id="sidebar-responsible">
+        <div class="sb-header">
+          <div class="sb-logo"><span class="sb-logo-text">AE</span></div>
+          <span class="sb-title">AFOR Emploi</span>
+          <button class="sb-collapse-btn" onclick="toggleSidebar('responsible')">‹</button>
+        </div>
+        <div class="sb-user">
+          <div class="sb-avatar" style="background:#9B59B6">RS</div>
+          <div class="sb-user-info">
+            <span class="sb-username">resp_user</span>
+            <span class="sb-role role-rs">Responsable</span>
+          </div>
+        </div>
+        <nav class="sb-nav">
+          <a href="#" class="sb-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Tableau de bord</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Employés</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg><span>Paramètres</span></a>
+        </nav>
+        <div class="sb-footer">
+          <button class="sb-dark-btn" onclick="toggleDark()">🌙</button>
+          <button class="sb-logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Déconnexion</span></button>
+        </div>
+      </aside>
+      <main class="main-content">
+        <header class="page-header">
+          <div class="ph-left">
+            <h1 class="ph-title">Tableau de bord <span class="ph-role-badge role-rs">Responsable</span></h1>
+            <p class="ph-sub">Vue transversale — tous les opérateurs et projets</p>
+          </div>
+          <div class="ph-right">
+            <div class="filter-bar">
+              <select class="filter-select"><option>Tous les acteurs</option><option>ONG Alpha</option><option>ONG Beta</option></select>
+              <select class="filter-select"><option>Tous les projets</option><option>Projet Jeunesse</option></select>
+            </div>
+            <button class="btn-outline sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Exporter Excel / PPT
+            </button>
+          </div>
+        </header>
+
+        <div class="kpi-grid cols5">
+          <div class="kpi-card accent-purple">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">1 248</span><span class="kpi-label">Total Employés</span><span class="kpi-trend up">+12%</span></div>
+          </div>
+          <div class="kpi-card accent-green">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">983</span><span class="kpi-label">Contrats actifs</span><span class="kpi-trend up">+8%</span></div>
+          </div>
+          <div class="kpi-card accent-blue">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">18</span><span class="kpi-label">Projets</span><span class="kpi-trend up">Actifs</span></div>
+          </div>
+          <div class="kpi-card accent-orange">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21l1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">24</span><span class="kpi-label">Acteurs</span><span class="kpi-trend up">+2</span></div>
+          </div>
+          <div class="kpi-card accent-red">
+            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            <div class="kpi-body"><span class="kpi-value">47</span><span class="kpi-label">Exp. urgents</span><span class="kpi-trend down">À traiter</span></div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card span2">
+            <div class="cc-header">
+              <h3>Comparatif acteurs</h3>
+              <div class="cc-tabs"><button class="cc-tab active">Employés</button><button class="cc-tab">Contrats</button></div>
+            </div>
+            <div class="chart-placeholder bar-chart">
+              <div class="bar-group"><div class="bar accent-purple" style="height:85%"><span>ONG Alpha</span></div><div class="bar-label">350</div></div>
+              <div class="bar-group"><div class="bar accent-purple" style="height:60%"><span>ONG Beta</span></div><div class="bar-label">248</div></div>
+              <div class="bar-group"><div class="bar accent-purple" style="height:50%"><span>ONG Gamma</span></div><div class="bar-label">206</div></div>
+              <div class="bar-group"><div class="bar accent-purple" style="height:35%"><span>ONG Delta</span></div><div class="bar-label">145</div></div>
+              <div class="bar-group"><div class="bar accent-purple" style="height:25%"><span>Autres</span></div><div class="bar-label">299</div></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="cc-header"><h3>Contrats expirés urgents</h3></div>
+            <div class="alert-list">
+              <div class="alert-item"><div class="ai-dot red"></div><div class="ai-info"><span class="ai-name">KONÉ Mamadou</span><span class="ai-sub">ONG Alpha · Expiré il y a 12j</span></div><button class="btn-xs">Renouveler</button></div>
+              <div class="alert-item"><div class="ai-dot red"></div><div class="ai-info"><span class="ai-name">DIALLO Fatou</span><span class="ai-sub">ONG Beta · Expiré il y a 8j</span></div><button class="btn-xs">Renouveler</button></div>
+              <div class="alert-item"><div class="ai-dot orange"></div><div class="ai-info"><span class="ai-name">BAMBA Seydou</span><span class="ai-sub">ONG Gamma · Expire dans 5j</span></div><button class="btn-xs">Renouveler</button></div>
+              <div class="alert-item"><div class="ai-dot orange"></div><div class="ai-info"><span class="ai-name">COULIBALY Awa</span><span class="ai-sub">ONG Alpha · Expire dans 3j</span></div><button class="btn-xs">Renouveler</button></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="cc-header"><h3>Répartition par diplôme</h3></div>
+            <div class="status-list">
+              <div class="sl-item"><div class="sl-bar"><div class="sl-fill" style="width:45%;background:#9B59B6"></div></div><span class="sl-label">Licence</span><span class="sl-val">562</span></div>
+              <div class="sl-item"><div class="sl-bar"><div class="sl-fill" style="width:28%;background:#3498DB"></div></div><span class="sl-label">Master</span><span class="sl-val">349</span></div>
+              <div class="sl-item"><div class="sl-bar"><div class="sl-fill" style="width:15%;background:#27AE60"></div></div><span class="sl-label">BTS</span><span class="sl-val">187</span></div>
+              <div class="sl-item"><div class="sl-bar"><div class="sl-fill" style="width:12%;background:#F39C12"></div></div><span class="sl-label">Autres</span><span class="sl-val">150</span></div>
+            </div>
+          </div>
+          <div class="chart-card span2">
+            <div class="cc-header"><h3>Tendance recrutement (6 mois)</h3></div>
+            <div class="chart-placeholder line-chart">
+              <svg viewBox="0 0 300 100" preserveAspectRatio="none">
+                <defs><linearGradient id="lg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9B59B6" stop-opacity="0.3"/><stop offset="100%" stop-color="#9B59B6" stop-opacity="0"/></linearGradient></defs>
+                <path d="M0,70 L60,55 L120,60 L180,40 L240,30 L300,20" fill="none" stroke="#9B59B6" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M0,70 L60,55 L120,60 L180,40 L240,30 L300,20 L300,100 L0,100Z" fill="url(#lg3)"/>
+              </svg>
+              <div class="line-labels"><span>Jan</span><span>Fév</span><span>Mar</span><span>Avr</span><span>Mai</span><span>Juin</span></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       VUE : EMPLOYEES PAGE
+  ══════════════════════════════════════════════ -->
+  <div id="view-employees" class="view">
+    <div class="app-layout">
+      <aside class="sidebar" id="sidebar-employees">
+        <div class="sb-header">
+          <div class="sb-logo"><span class="sb-logo-text">AE</span></div>
+          <span class="sb-title">AFOR Emploi</span>
+          <button class="sb-collapse-btn" onclick="toggleSidebar('employees')">‹</button>
+        </div>
+        <div class="sb-user">
+          <div class="sb-avatar" style="background:#3498DB">OF</div>
+          <div class="sb-user-info">
+            <span class="sb-username">operateur_1</span>
+            <span class="sb-role role-of">Opérateur</span>
+          </div>
+        </div>
+        <nav class="sb-nav">
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Tableau de bord</span></a>
+          <a href="#" class="sb-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Employés</span></a>
+          <a href="#" class="sb-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg><span>Paramètres</span></a>
+        </nav>
+        <div class="sb-footer">
+          <button class="sb-dark-btn" onclick="toggleDark()">🌙</button>
+          <button class="sb-logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Déconnexion</span></button>
+        </div>
+      </aside>
+      <main class="main-content">
+        <header class="page-header">
+          <div class="ph-left">
+            <h1 class="ph-title">Employés</h1>
+            <p class="ph-sub">350 employés enregistrés</p>
+          </div>
+          <div class="ph-right">
+            <button class="btn-primary sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nouvel employé</button>
+            <button class="btn-outline sm">Exporter</button>
+          </div>
+        </header>
+
+        <!-- Filters -->
+        <div class="emp-filters">
+          <div class="search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Rechercher par nom, prénom, poste…" class="search-input" />
+          </div>
+          <select class="filter-select"><option>Tous les projets</option><option>Projet Jeunesse</option><option>Formation Pro</option></select>
+          <select class="filter-select"><option>Tous les statuts</option><option>En cours</option><option>Expiré</option></select>
+          <div class="emp-count-badge">350 résultats</div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Matricule</th>
+                <th class="sortable">Nom <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg></th>
+                <th>Poste</th>
+                <th>Statut contrat</th>
+                <th>Genre</th>
+                <th>Région</th>
+                <th>Projet</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge-mat">EMP-001</span></td>
+                <td><div class="emp-name-cell"><div class="mini-avatar" style="background:#FF8C00">KM</div><div><strong>KONÉ Mamadou</strong><br/><small>Formateur</small></div></div></td>
+                <td>Formateur principal</td>
+                <td><span class="tag active">En cours</span></td>
+                <td><span class="tag gender-m">M</span></td>
+                <td>Abidjan</td>
+                <td><span class="tag project">Projet Jeunesse</span></td>
+                <td class="actions-cell">
+                  <button class="action-btn" title="Voir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="action-btn" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                  <button class="action-btn" title="Localisation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button>
+                  <button class="action-btn warning" title="Renouveler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg></button>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge-mat">EMP-002</span></td>
+                <td><div class="emp-name-cell"><div class="mini-avatar" style="background:#3498DB">DF</div><div><strong>DIALLO Fatou</strong><br/><small>Superviseur</small></div></div></td>
+                <td>Superviseure zone</td>
+                <td><span class="tag expired">Expiré</span></td>
+                <td><span class="tag gender-f">F</span></td>
+                <td>Bouaké</td>
+                <td><span class="tag project">Formation Pro</span></td>
+                <td class="actions-cell">
+                  <button class="action-btn" title="Voir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="action-btn" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                  <button class="action-btn" title="Localisation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button>
+                  <button class="action-btn warning" title="Renouveler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg></button>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge-mat">EMP-003</span></td>
+                <td><div class="emp-name-cell"><div class="mini-avatar" style="background:#27AE60">BS</div><div><strong>BAMBA Seydou</strong><br/><small>Agent terrain</small></div></div></td>
+                <td>Agent terrain</td>
+                <td><span class="tag active">En cours</span></td>
+                <td><span class="tag gender-m">M</span></td>
+                <td>Daloa</td>
+                <td><span class="tag project">Emploi Rural</span></td>
+                <td class="actions-cell">
+                  <button class="action-btn" title="Voir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="action-btn" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                  <button class="action-btn" title="Localisation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></button>
+                  <button class="action-btn warning" title="Renouveler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.26"/></svg></button>
+                </td>
+              </tr>
+              <tr class="row-muted">
+                <td colspan="8" class="more-rows">… 347 autres employés</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination">
+          <span class="pg-info">Affichage 1–10 sur 350</span>
+          <div class="pg-controls">
+            <select class="filter-select sm"><option>10</option><option>25</option><option>50</option></select>
+            <button class="pg-btn" disabled>‹</button>
+            <button class="pg-btn active">1</button>
+            <button class="pg-btn">2</button>
+            <button class="pg-btn">3</button>
+            <span>…</span>
+            <button class="pg-btn">35</button>
+            <button class="pg-btn">›</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

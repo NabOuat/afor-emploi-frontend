@@ -1,0 +1,223 @@
+.audit-log {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.audit-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.audit-log-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.audit-export-btn {
+  background: linear-gradient(135deg, #FF8C00 0%, #FF6B35 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.audit-export-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
+}
+
+.audit-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.audit-log-entry {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #FF8C00;
+  transition: all 0.3s ease;
+}
+
+.audit-log-entry:hover {
+  background: #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.audit-log-time {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  min-width: 180px;
+}
+
+.audit-log-time svg {
+  color: #FF8C00;
+}
+
+.audit-log-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.audit-log-action {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.audit-action-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.audit-action-badge.create {
+  background: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+}
+
+.audit-action-badge.update {
+  background: rgba(52, 152, 219, 0.1);
+  color: #3498db;
+}
+
+.audit-action-badge.delete {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+.audit-action-badge.view {
+  background: rgba(155, 89, 182, 0.1);
+  color: #9b59b6;
+}
+
+.audit-action-badge.export {
+  background: rgba(241, 196, 15, 0.1);
+  color: #f39c12;
+}
+
+.audit-entity-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.audit-log-details {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+.audit-entity-type {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+}
+
+.audit-user {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.audit-changes {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.audit-change {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #7f8c8d;
+}
+
+.change-field {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.change-old {
+  color: #e74c3c;
+  text-decoration: line-through;
+}
+
+.change-arrow {
+  color: #FF8C00;
+  font-weight: 700;
+}
+
+.change-new {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+.audit-log-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #7f8c8d;
+  text-align: center;
+}
+
+.audit-log-empty svg {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  .audit-log {
+    padding: 1rem;
+  }
+
+  .audit-log-entry {
+    flex-direction: column;
+  }
+
+  .audit-log-time {
+    min-width: auto;
+  }
+
+  .audit-log-details {
+    flex-wrap: wrap;
+  }
+}
