@@ -133,37 +133,12 @@ html.dark-mode .login-brand-panel {
   animation: fadeInUp 0.8s ease-out 0.2s both;
 }
 
-.login-logo-ring {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #FF8C00, #F39C12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 0 12px rgba(255, 140, 0, 0.12);
+.login-logo-img {
+  width: 220px;
+  height: auto;
+  object-fit: contain;
   margin-bottom: 24px;
-}
-
-.login-logo-inner {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: #0F172A;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 800;
-  color: #FF8C00;
-}
-
-.login-brand h1 {
-  color: #F8FAFC;
-  font-size: 32px;
-  font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.25));
 }
 
 .login-sub {
@@ -298,39 +273,46 @@ html.dark-mode .form-field label {
 }
 
 .input-wrap {
-  position: relative;
   display: flex;
   align-items: center;
-}
-
-.input-wrap input {
-  width: 100%;
-  padding: 11px 44px;
   border: 1.5px solid #E2E8F0;
   border-radius: 10px;
-  font-size: 14px;
-  color: #1A202C;
   background: #FFFFFF;
+  padding: 0 12px;
+  gap: 10px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
-  transform: none !important;
 }
 
-html.dark-mode .input-wrap input {
-  background: #161B22;
-  border-color: #30363D;
-  color: #E6EDF3;
-}
-
-.input-wrap input:focus {
-  outline: none;
+.input-wrap:focus-within {
   border-color: #FF8C00;
   box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.12);
 }
 
-html.dark-mode .input-wrap input:focus {
+html.dark-mode .input-wrap {
+  background: #161B22;
+  border-color: #30363D;
+}
+
+html.dark-mode .input-wrap:focus-within {
   border-color: #27AE60;
   box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.12);
+}
+
+.input-wrap input {
+  flex: 1;
+  padding: 11px 0;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #1A202C;
+  background: transparent;
+  font-family: inherit;
+  min-width: 0;
+}
+
+html.dark-mode .input-wrap input {
+  background: transparent;
+  color: #E6EDF3;
 }
 
 .input-wrap input:disabled {
@@ -339,29 +321,27 @@ html.dark-mode .input-wrap input:focus {
 }
 
 .input-icon {
-  position: absolute;
-  left: 13px;
   color: #A0AEC0;
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
   pointer-events: none;
 }
 
-.input-wrap input:focus ~ .input-icon {
+.input-wrap:focus-within .input-icon {
   color: #FF8C00;
 }
 
-html.dark-mode .input-wrap input:focus ~ .input-icon {
+html.dark-mode .input-wrap:focus-within .input-icon {
   color: #27AE60;
 }
 
 .eye-btn {
-  position: absolute;
-  right: 10px;
   color: #A0AEC0;
   padding: 4px;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   background: none;
   border: none;
   cursor: pointer;

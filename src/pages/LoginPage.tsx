@@ -54,10 +54,7 @@ export default function LoginPage() {
         <div className="login-left-deco deco2" aria-hidden="true" />
 
         <div className="login-brand">
-          <div className="login-logo-ring">
-            <div className="login-logo-inner">AE</div>
-          </div>
-          <h1>AFOR Emploi</h1>
+          <img src="/assets/images/logologin.png" alt="AFOR Emploi" className="login-logo-img" />
           <p className="login-sub">Plateforme de gestion du personnel et des contrats</p>
 
           <div className="login-features">
@@ -74,7 +71,6 @@ export default function LoginPage() {
         <div className="login-form-card">
 
           <div className="lfc-header">
-            <div className="lfc-avatar">AE</div>
             <h2>Connexion</h2>
             <p>Accédez à votre espace de travail</p>
           </div>
