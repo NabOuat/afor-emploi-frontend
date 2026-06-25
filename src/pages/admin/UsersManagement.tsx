@@ -3,6 +3,7 @@ import { Search, Plus, Trash2, X, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCi
 import authService from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import '../../styles/AdminPages.css';
 
 interface UserEntry {
   id: string;
@@ -49,7 +50,7 @@ function useTheme(dark: boolean) {
 }
 
 export default function UsersManagement() {
-  const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api$/, '');
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
   const { actorType } = useAuth();
   const [dark] = useDarkMode();
   const t = useTheme(dark);
@@ -82,9 +83,9 @@ export default function UsersManagement() {
     try {
       const [ur, ar] = await Promise.all([
         fetch(`${apiUrl}/api/auth/users`, { headers: { ...authService.getAuthHeader() } }),
-        fetch(`${apiUrl}/api/acteurs`),
+        fetch(`${apiUrl}/api/acteurs`, { headers: authService.getAuthHeader() }),
       ]);
-      if (ur.ok) setUsers(await ur.json());
+      if (ur.ok) { const d = await ur.json(); setUsers(Array.isArray(d) ? d : (d.items ?? [])); }
       if (ar.ok) setActeurs(await ar.json());
     } catch { showToast('error', 'Erreur de chargement'); }
     finally { setLoading(false); }
@@ -155,101 +156,78 @@ export default function UsersManagement() {
 
   /* ════════════════════════ RENDER ════════════════════════ */
   return (
-    <div style={{ minHeight: '100vh', background: t.page, padding: '24px' }}>
+    <div className={`ap-page${dark ? ' dark' : ''}`}>
 
-      {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 600, background: toast.type === 'success' ? '#27AE60' : '#E74C3C', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
-          {toast.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+        <div className={`ap-toast ${toast.type}`}>
+          {toast.type === 'success' ? <CheckCircle size={15}/> : <AlertCircle size={15}/>}
           {toast.message}
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: t.text }}>Gestion des Utilisateurs</h1>
-          <p style={{ margin: '4px 0 0', color: t.textSub, fontSize: '0.9rem' }}>
-            Comptes d'accès à la plateforme — {users.length} compte{users.length !== 1 ? 's' : ''}
-          </p>
+      <div className="ap-header">
+        <div className="ap-header-left">
+          <h1>Gestion des Utilisateurs</h1>
+          <p>Comptes d'accès à la plateforme — {users.length} compte{users.length !== 1 ? 's' : ''}</p>
         </div>
-        {isAdmin && (
-          <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #9B59B6, #8e44ad)', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 3px 10px rgba(155,89,182,0.35)' }}>
-            <Plus size={18} /> Nouveau compte
-          </button>
-        )}
+        <div className="ap-header-right">
+          {isAdmin && (
+            <button className="ap-btn" style={{background:'#9B59B6',color:'#fff'}} onClick={openCreate}>
+              <Plus size={15}/> Nouveau compte
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ background: t.card, borderRadius: 12, border: `1px solid ${t.border}`, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200, background: t.input, border: `1px solid ${t.inputBorder}`, borderRadius: 8, padding: '8px 12px' }}>
-          <Search size={16} color={t.textSub} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher par nom, email, identifiant…"
-            style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', color: t.text, width: '100%' }} />
+      <div className="ap-toolbar">
+        <div className="ap-search">
+          <Search size={15}/>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher par nom, email, identifiant…"/>
         </div>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${t.inputBorder}`, background: t.input, color: t.text, fontSize: '0.9rem', cursor: 'pointer' }}>
+        <select className="ap-filter-select" value={filterType} onChange={e => setFilterType(e.target.value)}>
           <option value="">Tous les types</option>
           {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <span style={{ fontSize: '0.85rem', color: t.textSub, marginLeft: 'auto' }}>{filtered.length} / {users.length} compte(s)</span>
+        <span className="ap-count">{filtered.length} / {users.length} compte(s)</span>
       </div>
 
-      {/* Table */}
-      <div style={{ background: t.card, borderRadius: 12, border: `1px solid ${t.border}`, overflow: 'hidden' }}>
+      <div className="ap-table-wrap">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: t.textSub }}>Chargement…</div>
+          <div className="ap-loading">Chargement…</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: t.textSub }}>
-            <ShieldCheck size={40} style={{ opacity: 0.3, marginBottom: 8 }} />
-            <p style={{ margin: 0 }}>Aucun utilisateur trouvé</p>
-          </div>
+          <div className="ap-empty"><ShieldCheck size={40}/><p>Aucun utilisateur trouvé</p></div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: t.theadBg, borderBottom: `2px solid ${t.border}` }}>
-                {['Utilisateur', 'Nom complet', 'Email', 'Acteur', 'Type', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
+          <table className="ap-table">
+            <thead><tr>{['Utilisateur','Nom complet','Email','Acteur','Type','Actions'].map(h=><th key={h}>{h}</th>)}</tr></thead>
             <tbody>
-              {filtered.map((u, i) => {
-                const col = u.type_acteur ? (TYPE_COLORS[u.type_acteur] || { bg: 'rgba(100,100,100,0.1)', color: '#666' }) : null;
+              {filtered.map((u) => {
+                const col = u.type_acteur ? (TYPE_COLORS[u.type_acteur] || { bg:'rgba(100,100,100,0.1)', color:'#666' }) : null;
                 return (
-                  <tr key={u.id} style={{ borderBottom: `1px solid ${t.border}`, background: i % 2 === 0 ? t.card : t.cardAlt }}>
-                    <td style={{ padding: '13px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 34, height: 34, borderRadius: 8, flexShrink: 0, background: avatarBg(u.username), color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>
-                          {u.username.slice(0, 2).toUpperCase()}
+                  <tr key={u.id}>
+                    <td>
+                      <div style={{display:'flex',alignItems:'center',gap:10}}>
+                        <div className="ap-card-avatar" style={{width:32,height:32,borderRadius:8,fontSize:11,background:avatarBg(u.username),color:'#fff'}}>
+                          {u.username.slice(0,2).toUpperCase()}
                         </div>
-                        <span style={{ fontWeight: 700, color: t.text, fontSize: '0.9rem' }}>{u.username}</span>
+                        <span style={{fontWeight:700}}>{u.username}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: t.textSub }}>
-                      {(u.prenom || u.nom) ? `${u.prenom || ''} ${u.nom || ''}`.trim() : <span style={{ color: t.textMuted }}>—</span>}
-                    </td>
-                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: t.textSub }}>
-                      {u.email || <span style={{ color: t.textMuted }}>—</span>}
-                    </td>
-                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: t.textSub, maxWidth: 220 }}>
-                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {u.acteur_nom || <span style={{ color: t.textMuted }}>—</span>}
+                    <td>{(u.prenom||u.nom) ? `${u.prenom||''} ${u.nom||''}`.trim() : <span style={{opacity:.4}}>—</span>}</td>
+                    <td>{u.email || <span style={{opacity:.4}}>—</span>}</td>
+                    <td style={{maxWidth:220}}>
+                      <span style={{display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                        {u.acteur_nom || <span style={{opacity:.4}}>—</span>}
                       </span>
                     </td>
-                    <td style={{ padding: '13px 16px' }}>
-                      {col && u.type_acteur ? (
-                        <span style={{ padding: '4px 10px', borderRadius: 6, background: col.bg, color: col.color, fontSize: '0.78rem', fontWeight: 700 }}>
-                          {TYPE_LABELS[u.type_acteur] || u.type_acteur}
-                        </span>
-                      ) : <span style={{ color: t.textMuted }}>—</span>}
+                    <td>
+                      {col && u.type_acteur
+                        ? <span className="ap-badge" style={{background:col.bg,color:col.color}}>{TYPE_LABELS[u.type_acteur]||u.type_acteur}</span>
+                        : <span style={{opacity:.4}}>—</span>}
                     </td>
-                    <td style={{ padding: '13px 16px' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => openEdit(u)} style={{ padding: '6px 8px', borderRadius: 7, border: 'none', background: 'rgba(39,174,96,0.12)', color: '#27AE60', cursor: 'pointer' }} title="Modifier"><Pencil size={14} /></button>
-                        {isAdmin && (
-                          <button onClick={() => openDelete(u)} style={{ padding: '6px 8px', borderRadius: 7, border: 'none', background: 'rgba(231,76,60,0.12)', color: '#E74C3C', cursor: 'pointer' }} title="Supprimer"><Trash2 size={14} /></button>
-                        )}
+                    <td>
+                      <div className="ap-card-actions">
+                        <button className="ap-icon-btn view" onClick={()=>openEdit(u)} title="Modifier"><Pencil size={14}/></button>
+                        {isAdmin && <button className="ap-icon-btn delete" onClick={()=>openDelete(u)} title="Supprimer"><Trash2 size={14}/></button>}
                       </div>
                     </td>
                   </tr>
@@ -361,7 +339,6 @@ export default function UsersManagement() {
         </Overlay>
       )}
 
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} input::placeholder,textarea::placeholder{color:${dark?'#4a5a70':'#aab4c0'}}`}</style>
     </div>
   );
 }

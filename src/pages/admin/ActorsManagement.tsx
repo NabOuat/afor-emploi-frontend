@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, CheckCircle, Building2, Phone, Mail, MapPin } from 'lucide-react';
+import authService from '../../services/authService';
+import { useDarkMode } from '../../hooks/useDarkMode';
+import '../../styles/AdminPages.css';
 
 interface Acteur {
   id: string;
@@ -37,6 +40,7 @@ interface Toast { type: 'success' | 'error'; message: string; }
 
 export default function ActorsManagement() {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+  const [dark] = useDarkMode();
 
   const [acteurs, setActeurs]     = useState<Acteur[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -59,7 +63,7 @@ export default function ActorsManagement() {
   const fetchActeurs = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/acteurs`);
+      const res = await fetch(`${apiUrl}/acteurs`, { headers: authService.getAuthHeader() });
       if (res.ok) setActeurs(await res.json());
     } catch { showToast('error', 'Erreur de chargement'); }
     finally { setLoading(false); }
@@ -105,7 +109,7 @@ export default function ActorsManagement() {
       const method = isEdit ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
         body: JSON.stringify(form),
       });
       if (!res.ok) {
@@ -124,7 +128,7 @@ export default function ActorsManagement() {
     if (!selected) return;
     setSaving(true);
     try {
-      const res = await fetch(`${apiUrl}/acteurs/${selected.id}`, { method: 'DELETE' });
+      const res = await fetch(`${apiUrl}/acteurs/${selected.id}`, { method: 'DELETE', headers: authService.getAuthHeader() });
       if (!res.ok) throw new Error('Erreur lors de la suppression');
       showToast('success', `"${selected.nom}" supprimé`);
       closeModal();
@@ -139,164 +143,86 @@ export default function ActorsManagement() {
   const typeColor = (t: string) => TYPE_COLORS[t] || { bg: 'rgba(155,89,182,0.12)', color: '#9B59B6' };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f6f9', padding: '24px' }}>
+    <div className={`ap-page${dark ? ' dark' : ''}`}>
 
-      {/* Toast */}
       {toast && (
-        <div style={{
-          position: 'fixed', top: 20, right: 20, zIndex: 9999,
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '12px 18px', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 600,
-          background: toast.type === 'success' ? '#27AE60' : '#E74C3C',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-        }}>
-          {toast.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+        <div className={`ap-toast ${toast.type}`}>
+          {toast.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
           {toast.message}
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: '#1f2d3d' }}>Gestion des Acteurs</h1>
-          <p style={{ margin: '4px 0 0', color: '#6b7a90', fontSize: '0.9rem' }}>
-            Organismes de Formation, Acteurs de Formation et Responsables
-          </p>
+      <div className="ap-header">
+        <div className="ap-header-left">
+          <h1>Gestion des Acteurs</h1>
+          <p>Organismes de Formation, Acteurs de Formation et Responsables</p>
         </div>
-        <button onClick={openCreate} style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '10px 20px', borderRadius: 9, border: 'none',
-          background: 'linear-gradient(135deg, #FF8C00, #e07800)',
-          color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
-          boxShadow: '0 3px 10px rgba(255,140,0,0.3)',
-        }}>
-          <Plus size={18} /> Nouvel acteur
-        </button>
+        <div className="ap-header-right">
+          <button className="ap-btn ap-btn-primary" onClick={openCreate}>
+            <Plus size={15} /> Nouvel acteur
+          </button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div style={{
-        background: '#fff', borderRadius: 12, border: '1px solid #e8edf3',
-        padding: '14px 18px', marginBottom: 18,
-        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200,
-          background: '#f8fafc', border: '1px solid #e8edf3', borderRadius: 8, padding: '8px 12px' }}>
-          <Search size={16} color="#6b7a90" />
-          <input
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Rechercher par nom, email, contact…"
-            style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', color: '#1f2d3d', width: '100%' }}
-          />
+      <div className="ap-toolbar">
+        <div className="ap-search">
+          <Search size={15} />
+          <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Rechercher par nom, email, contact…" />
         </div>
-        <select
-          value={filterType}
-          onChange={e => setFilterType(e.target.value)}
-          style={{
-            padding: '8px 12px', borderRadius: 8, border: '1px solid #e8edf3',
-            background: '#f8fafc', fontSize: '0.9rem', color: '#1f2d3d', cursor: 'pointer',
-          }}
-        >
+        <select className="ap-filter-select" value={filterType} onChange={e => setFilterType(e.target.value)}>
           <option value="">Tous les types</option>
           <option value="OF">Organisme de Formation (OF)</option>
           <option value="AF">Acteur de Formation (AF)</option>
           <option value="RESPO">Responsable (RESPO)</option>
         </select>
-        <span style={{ fontSize: '0.85rem', color: '#6b7a90', marginLeft: 'auto' }}>
-          {filtered.length} / {acteurs.length} acteur(s)
-        </span>
+        <span className="ap-count">{filtered.length} / {acteurs.length} acteur(s)</span>
       </div>
 
-      {/* Table */}
-      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8edf3', overflow: 'hidden' }}>
+      <div className="ap-table-wrap">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#6b7a90' }}>Chargement…</div>
+          <div className="ap-loading">Chargement…</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#6b7a90' }}>
-            <Building2 size={40} style={{ opacity: 0.3, marginBottom: 8 }} />
-            <p style={{ margin: 0 }}>Aucun acteur trouvé</p>
+          <div className="ap-empty">
+            <Building2 size={40} />
+            <p>Aucun acteur trouvé</p>
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="ap-table">
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e8edf3' }}>
-                {['Nom', 'Type', 'Contact', 'Email', 'Adresse', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.8rem',
-                    fontWeight: 700, color: '#6b7a90', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
+              <tr>{['Nom', 'Type', 'Contact', 'Email', 'Adresse', 'Actions'].map(h => <th key={h}>{h}</th>)}</tr>
             </thead>
             <tbody>
-              {filtered.map((a, i) => {
+              {filtered.map((a) => {
                 const tc = typeColor(a.type_acteur);
                 return (
-                  <tr key={a.id} style={{ borderBottom: '1px solid #f0f4f8', background: i % 2 === 0 ? '#fff' : '#fafbfc' }}>
-                    <td style={{ padding: '13px 16px', fontWeight: 700, color: '#1f2d3d', fontSize: '0.9rem' }}>
+                  <tr key={a.id}>
+                    <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{
-                          width: 34, height: 34, borderRadius: 8,
-                          background: tc.bg, color: tc.color,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.75rem', fontWeight: 800, flexShrink: 0,
-                        }}>
+                        <div className="ap-card-avatar" style={{ width: 32, height: 32, borderRadius: 8, fontSize: 11, background: tc.bg, color: tc.color }}>
                           {a.nom.substring(0, 2).toUpperCase()}
                         </div>
-                        {a.nom}
+                        <span style={{ fontWeight: 700 }}>{a.nom}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '13px 16px' }}>
-                      <span style={{
-                        padding: '4px 10px', borderRadius: 6,
-                        background: tc.bg, color: tc.color,
-                        fontSize: '0.78rem', fontWeight: 700,
-                      }}>
-                        {a.type_acteur}
-                      </span>
-                      <div style={{ fontSize: '0.72rem', color: '#9aa5b4', marginTop: 2 }}>
-                        {TYPE_LABELS[a.type_acteur] || a.type_acteur}
-                      </div>
+                    <td>
+                      <span className="ap-badge" style={{ background: tc.bg, color: tc.color }}>{a.type_acteur}</span>
+                      <div style={{ fontSize: 11, marginTop: 2, opacity: 0.6 }}>{TYPE_LABELS[a.type_acteur]}</div>
                     </td>
-                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: '#4a5568' }}>
-                      {a.contact_1 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Phone size={12} color="#9aa5b4" /> {a.contact_1}
-                        </div>
-                      )}
-                      {a.contact_2 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                          <Phone size={12} color="#9aa5b4" /> {a.contact_2}
-                        </div>
-                      )}
-                      {!a.contact_1 && !a.contact_2 && <span style={{ color: '#c0c9d6' }}>—</span>}
+                    <td>
+                      {a.contact_1 && <div className="ap-card-row"><Phone size={12}/>{a.contact_1}</div>}
+                      {a.contact_2 && <div className="ap-card-row"><Phone size={12}/>{a.contact_2}</div>}
+                      {!a.contact_1 && !a.contact_2 && <span style={{opacity:.4}}>—</span>}
                     </td>
-                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: '#4a5568' }}>
-                      {a.email_1 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Mail size={12} color="#9aa5b4" /> {a.email_1}
-                        </div>
-                      )}
-                      {!a.email_1 && <span style={{ color: '#c0c9d6' }}>—</span>}
+                    <td>
+                      {a.email_1 ? <div className="ap-card-row"><Mail size={12}/>{a.email_1}</div> : <span style={{opacity:.4}}>—</span>}
                     </td>
-                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: '#4a5568' }}>
-                      {a.adresse_1 ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <MapPin size={12} color="#9aa5b4" /> {a.adresse_1}
-                        </div>
-                      ) : <span style={{ color: '#c0c9d6' }}>—</span>}
+                    <td>
+                      {a.adresse_1 ? <div className="ap-card-row"><MapPin size={12}/>{a.adresse_1}</div> : <span style={{opacity:.4}}>—</span>}
                     </td>
-                    <td style={{ padding: '13px 16px' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => openEdit(a)} title="Modifier" style={{
-                          padding: '6px 8px', borderRadius: 7, border: 'none',
-                          background: 'rgba(52,152,219,0.1)', color: '#3498DB', cursor: 'pointer',
-                        }}><Edit2 size={14} /></button>
-                        <button onClick={() => openDelete(a)} title="Supprimer" style={{
-                          padding: '6px 8px', borderRadius: 7, border: 'none',
-                          background: 'rgba(231,76,60,0.1)', color: '#E74C3C', cursor: 'pointer',
-                        }}><Trash2 size={14} /></button>
+                    <td>
+                      <div className="ap-card-actions">
+                        <button className="ap-icon-btn edit" onClick={() => openEdit(a)} title="Modifier"><Edit2 size={14}/></button>
+                        <button className="ap-icon-btn delete" onClick={() => openDelete(a)} title="Supprimer"><Trash2 size={14}/></button>
                       </div>
                     </td>
                   </tr>
@@ -307,184 +233,71 @@ export default function ActorsManagement() {
         )}
       </div>
 
-      {/* ── Modal Créer / Modifier ────────────────────────────── */}
       {(modal === 'create' || modal === 'edit') && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: 16,
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: 14, width: '100%', maxWidth: 560,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-            maxHeight: '90vh', overflowY: 'auto',
-          }}>
-            {/* Modal header */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '20px 24px', borderBottom: '1px solid #e8edf3',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 9,
-                  background: 'rgba(255,140,0,0.12)', color: '#FF8C00',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Building2 size={18} />
-                </div>
-                <h3 style={{ margin: 0, fontWeight: 700, color: '#1f2d3d' }}>
-                  {modal === 'create' ? 'Nouvel acteur' : `Modifier — ${selected?.nom}`}
-                </h3>
-              </div>
-              <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7a90', padding: 4 }}>
-                <X size={20} />
-              </button>
+        <div className="ap-modal-overlay" onClick={closeModal}>
+          <div className="ap-modal ap-modal-lg" onClick={e => e.stopPropagation()}>
+            <div className="ap-modal-header">
+              <h2>{modal === 'create' ? 'Nouvel acteur' : `Modifier — ${selected?.nom}`}</h2>
+              <button className="ap-modal-close" onClick={closeModal}><X size={18}/></button>
             </div>
-
-            {/* Modal body */}
-            <div style={{ padding: '20px 24px' }}>
-              {/* Nom + Type */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#1f2d3d', marginBottom: 5 }}>
-                    Nom <span style={{ color: '#E74C3C' }}>*</span>
-                  </label>
-                  <input value={form.nom} onChange={e => f('nom', e.target.value)}
-                    placeholder="Nom de l'acteur"
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e8edf3',
-                      fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
+            <div className="ap-modal-body">
+              <div className="ap-field-grid">
+                <div className="ap-field">
+                  <label>Nom *</label>
+                  <input className="ap-input" value={form.nom} onChange={e => f('nom', e.target.value)} placeholder="Nom de l'acteur" />
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#1f2d3d', marginBottom: 5 }}>
-                    Type <span style={{ color: '#E74C3C' }}>*</span>
-                  </label>
-                  <select value={form.type_acteur} onChange={e => f('type_acteur', e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e8edf3',
-                      fontSize: '0.9rem', background: '#fff', cursor: 'pointer', boxSizing: 'border-box' }}>
+                <div className="ap-field">
+                  <label>Type *</label>
+                  <select className="ap-select" value={form.type_acteur} onChange={e => f('type_acteur', e.target.value)}>
                     <option value="OF">OF — Organisme de Formation</option>
                     <option value="AF">AF — Acteur de Formation</option>
                     <option value="RESPO">RESPO — Responsable</option>
                   </select>
                 </div>
               </div>
-
-              {/* Contacts */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                {[
-                  { label: 'Contact principal', key: 'contact_1' as const, ph: '+225 XX XX XX XX' },
-                  { label: 'Contact secondaire', key: 'contact_2' as const, ph: 'Optionnel' },
-                ].map(({ label, key, ph }) => (
-                  <div key={key}>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#1f2d3d', marginBottom: 5 }}>{label}</label>
-                    <input value={form[key]} onChange={e => f(key, e.target.value)} placeholder={ph}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e8edf3',
-                        fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
-                  </div>
+              <div className="ap-field-grid">
+                {([['contact_1','Contact principal','+225 XX XX XX XX'],['contact_2','Contact secondaire','Optionnel']] as const).map(([k,l,p])=>(
+                  <div className="ap-field" key={k}><label>{l}</label><input className="ap-input" value={form[k]} onChange={e=>f(k,e.target.value)} placeholder={p}/></div>
                 ))}
               </div>
-
-              {/* Emails */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                {[
-                  { label: 'Email principal', key: 'email_1' as const, ph: 'contact@acteur.ci' },
-                  { label: 'Email secondaire', key: 'email_2' as const, ph: 'Optionnel' },
-                ].map(({ label, key, ph }) => (
-                  <div key={key}>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#1f2d3d', marginBottom: 5 }}>{label}</label>
-                    <input type="email" value={form[key]} onChange={e => f(key, e.target.value)} placeholder={ph}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e8edf3',
-                        fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
-                  </div>
+              <div className="ap-field-grid">
+                {([['email_1','Email principal','contact@acteur.ci'],['email_2','Email secondaire','Optionnel']] as const).map(([k,l,p])=>(
+                  <div className="ap-field" key={k}><label>{l}</label><input type="email" className="ap-input" value={form[k]} onChange={e=>f(k,e.target.value)} placeholder={p}/></div>
                 ))}
               </div>
-
-              {/* Adresses */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
-                {[
-                  { label: 'Adresse principale', key: 'adresse_1' as const, ph: 'Abidjan, Plateau' },
-                  { label: 'Adresse secondaire', key: 'adresse_2' as const, ph: 'Optionnel' },
-                ].map(({ label, key, ph }) => (
-                  <div key={key}>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#1f2d3d', marginBottom: 5 }}>{label}</label>
-                    <input value={form[key]} onChange={e => f(key, e.target.value)} placeholder={ph}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e8edf3',
-                        fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
-                  </div>
+              <div className="ap-field-grid">
+                {([['adresse_1','Adresse principale','Abidjan, Plateau'],['adresse_2','Adresse secondaire','Optionnel']] as const).map(([k,l,p])=>(
+                  <div className="ap-field" key={k}><label>{l}</label><input className="ap-input" value={form[k]} onChange={e=>f(k,e.target.value)} placeholder={p}/></div>
                 ))}
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button onClick={closeModal} style={{
-                  padding: '10px 20px', borderRadius: 9, border: '1px solid #e8edf3',
-                  background: '#fff', color: '#6b7a90', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
-                }}>
-                  Annuler
-                </button>
-                <button onClick={handleSave} disabled={saving} style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 20px', borderRadius: 9, border: 'none',
-                  background: saving ? '#ccc' : 'linear-gradient(135deg, #FF8C00, #e07800)',
-                  color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 3px 10px rgba(255,140,0,0.3)',
-                }}>
-                  {saving
-                    ? <div style={{ width: 14, height: 14, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                    : <Save size={15} />
-                  }
-                  {modal === 'create' ? 'Créer' : 'Enregistrer'}
-                </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal Suppression ─────────────────────────────────── */}
-      {modal === 'delete' && selected && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: 16,
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: 14, width: '100%', maxWidth: 420,
-            padding: '28px 28px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-              <div style={{
-                width: 52, height: 52, borderRadius: 14,
-                background: 'rgba(231,76,60,0.1)', color: '#E74C3C',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Trash2 size={24} />
-              </div>
-            </div>
-            <h3 style={{ margin: '0 0 8px', textAlign: 'center', color: '#1f2d3d', fontWeight: 700 }}>
-              Supprimer l'acteur ?
-            </h3>
-            <p style={{ margin: '0 0 24px', textAlign: 'center', color: '#6b7a90', fontSize: '0.9rem' }}>
-              <strong>"{selected.nom}"</strong> sera définitivement supprimé.
-              Cette action est irréversible.
-            </p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={closeModal} style={{
-                flex: 1, padding: '10px', borderRadius: 9, border: '1px solid #e8edf3',
-                background: '#fff', color: '#6b7a90', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
-              }}>Annuler</button>
-              <button onClick={handleDelete} disabled={saving} style={{
-                flex: 1, padding: '10px', borderRadius: 9, border: 'none',
-                background: saving ? '#ccc' : '#E74C3C',
-                color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
-              }}>
-                {saving ? 'Suppression…' : 'Supprimer'}
+            <div className="ap-modal-footer">
+              <button className="ap-btn ap-btn-ghost" onClick={closeModal}>Annuler</button>
+              <button className="ap-btn ap-btn-primary" onClick={handleSave} disabled={saving}>
+                <Save size={14}/>{saving ? 'Enregistrement…' : modal === 'create' ? 'Créer' : 'Enregistrer'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      {modal === 'delete' && selected && (
+        <div className="ap-modal-overlay" onClick={closeModal}>
+          <div className="ap-modal ap-modal-sm" onClick={e => e.stopPropagation()}>
+            <div className="ap-modal-body" style={{paddingTop:'1.75rem',paddingBottom:'1.5rem',textAlign:'center'}}>
+              <div className="ap-confirm-icon"><Trash2 size={24}/></div>
+              <h3 style={{margin:'0 0 8px',fontSize:16,fontWeight:800}}>Supprimer l'acteur ?</h3>
+              <p className="ap-confirm-text">L'acteur <span className="ap-confirm-name">{selected.nom}</span> sera définitivement supprimé. Cette action est irréversible.</p>
+            </div>
+            <div className="ap-modal-footer" style={{justifyContent:'center',gap:10}}>
+              <button className="ap-btn ap-btn-ghost" onClick={closeModal}>Annuler</button>
+              <button className="ap-btn ap-btn-danger" onClick={handleDelete} disabled={saving}>
+                <Trash2 size={14}/>{saving ? 'Suppression…' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

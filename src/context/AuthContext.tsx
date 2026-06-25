@@ -58,14 +58,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const interval = setInterval(() => {
       if (!authService.isAuthenticated()) {
+        console.log('Auth: Token expired during session, logging out');
         setUser(null);
         setError(null);
       }
     }, 60_000);
 
-    const onActivity = () => authService.refreshExpiry();
-    window.addEventListener('click', onActivity);
-    window.addEventListener('keydown', onActivity);
+    const onActivity = () => {
+      // Éviter les appels trop fréquents
+      try {
+        authService.refreshExpiry();
+      } catch (error) {
+        console.error('Auth: Error refreshing expiry', error);
+      }
+    };
+    
+    // Utiliser passive listeners pour améliorer les performances
+    window.addEventListener('click', onActivity, { passive: true });
+    window.addEventListener('keydown', onActivity, { passive: true });
 
     return () => {
       clearInterval(interval);

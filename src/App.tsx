@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRoute from './components/RoleBasedRoute';
@@ -14,11 +14,14 @@ import OperatorSettingsPage from './pages/operator/SettingsPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ActorsManagement from './pages/admin/ActorsManagement';
 import ProjectsManagement from './pages/admin/ProjectsManagement';
+import EngagementsManagement from './pages/admin/EngagementsManagement';
 import UsersManagement from './pages/admin/UsersManagement';
 import ZonesManagement from './pages/admin/ZonesManagement';
 import GeoManagement from './pages/admin/GeoManagement';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
+import DatabasePage from './pages/admin/DatabasePage';
 import EmployeesPage from './pages/EmployeesPage';
+import './styles/GlobalDesignSystem.css';
 import './App.css';
 
 function App() {
@@ -81,6 +84,11 @@ function App() {
                 <SidebarLayout><ProjectsManagement /></SidebarLayout>
               </ProtectedRoute>
             } />
+            <Route path="/admin/engagements" element={
+              <ProtectedRoute>
+                <SidebarLayout><EngagementsManagement /></SidebarLayout>
+              </ProtectedRoute>
+            } />
             <Route path="/admin/users" element={
               <ProtectedRoute>
                 <SidebarLayout><UsersManagement /></SidebarLayout>
@@ -101,11 +109,37 @@ function App() {
                 <SidebarLayout><AdminSettingsPage /></SidebarLayout>
               </ProtectedRoute>
             } />
+            <Route path="/admin/database" element={
+              <ProtectedRoute>
+                <SidebarLayout><DatabasePage tab="tables" /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/database/tables" element={
+              <ProtectedRoute>
+                <SidebarLayout><DatabasePage tab="tables" /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/database/schema" element={
+              <ProtectedRoute>
+                <SidebarLayout><DatabasePage tab="schema" /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/database/import" element={
+              <ProtectedRoute>
+                <SidebarLayout><DatabasePage tab="import" /></SidebarLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/database/migrate" element={
+              <ProtectedRoute>
+                <SidebarLayout><DatabasePage tab="migrate" /></SidebarLayout>
+              </ProtectedRoute>
+            } />
             <Route path="/employees" element={
               <ProtectedRoute>
                 <SidebarLayout><EmployeesPage /></SidebarLayout>
               </ProtectedRoute>
             } />
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </div>
       </Router>

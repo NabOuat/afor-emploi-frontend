@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Edit2, Plus, Users, CheckCircle, Download, ChevronLeft, ChevronRight, Eye, MapPin, RefreshCw, ArrowUp, ArrowDown, BarChart2, FileText } from 'lucide-react';
+import authService from '../services/authService';
+import { Search, Edit2, Plus, Users, CheckCircle, Download, ChevronLeft, ChevronRight, Eye, MapPin, RefreshCw, ArrowUp, ArrowDown, BarChart2, FileText, UserCheck, UserX, Layers, ChevronDown } from 'lucide-react';
 import EmployeeModal from '../components/EmployeeModal';
 import EditEmployeeModal from '../components/EditEmployeeModal';
 import ChangeLocationModal from '../components/ChangeLocationModal';
@@ -48,6 +49,38 @@ interface Employee {
 type SortField = keyof Employee | null;
 type SortOrder = 'asc' | 'desc';
 
+function transformEmployees(data: any[]): Employee[] {
+  return data.map((emp) => {
+    const statut: 'Contractuel' | 'Fonctionnaire' = emp.type_personne === 'Fonctionnaire' ? 'Fonctionnaire' : 'Contractuel';
+    const genre: 'M' | 'F' = (emp.genre === 'M' || emp.genre === 'F') ? emp.genre : 'M';
+    return {
+      id: emp.id || '',
+      nom: String(emp.nom || '').trim(),
+      prenom: String(emp.prenom || '').trim(),
+      matricule: emp.matricule && emp.matricule !== '-' ? emp.matricule : undefined,
+      qualification: String(emp.qualification || 'Inconnu').trim(),
+      poste: String(emp.poste || 'Non spécifié').trim(),
+      statut,
+      genre,
+      age: Number(emp.age) || 0,
+      date_naissance: emp.date_naissance || undefined,
+      contact: emp.contact && emp.contact !== '-' ? emp.contact : undefined,
+      diplome: emp.diplome && emp.diplome !== '-' ? emp.diplome : undefined,
+      ecole: emp.ecole && emp.ecole !== '-' && typeof emp.ecole === 'string' ? emp.ecole : undefined,
+      type_contrat: emp.type_contrat && emp.type_contrat !== '-' ? emp.type_contrat : undefined,
+      date_debut: emp.date_debut || undefined,
+      date_fin: emp.date_fin || undefined,
+      validiteContrat: emp.is_active ? 'En cours' : 'Expiré',
+      qualiteContrat: String(emp.categorie_poste || 'Indéterminée').trim(),
+      categorie_poste: emp.categorie_poste && emp.categorie_poste !== '-' ? emp.categorie_poste : undefined,
+      region: String(emp.region || '-').trim(),
+      departement: String(emp.departement || '-').trim(),
+      sousPrefecture: String(emp.sous_prefecture || '-').trim(),
+      projets: Array.isArray(emp.projets) ? emp.projets : [],
+    };
+  });
+}
+
 export default function EmployeesPage() {
   const navigate = useNavigate();
   const { actorType } = useAuth();
@@ -73,10 +106,10 @@ export default function EmployeesPage() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [projects, setProjects] = useState<{ id: string; nom: string }[]>([]);
+  const [statsOpen, setStatsOpen] = useState(true);
 
   useEffect(() => {
-    const token = sessionStorage.getItem('token');
-    if (!token) {
+    if (!authService.isAuthenticated()) {
       navigate('/login');
       return;
     }
@@ -84,7 +117,7 @@ export default function EmployeesPage() {
     // Récupérer les employés de l'utilisateur connecté
     const fetchEmployees = async () => {
       try {
-        const acteurId = sessionStorage.getItem('acteur_id');
+        const acteurId = authService.getUser()?.acteur_id;
         if (!acteurId) {
           navigate('/login');
           return;
@@ -92,55 +125,17 @@ export default function EmployeesPage() {
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         const url = isRespo
-          ? `${apiUrl}/employees/list-all`
-          : `${apiUrl}/employees/list/${acteurId}`;
-        const response = await fetch(url);
-        
-        
+          ? `${apiUrl}/employees/list-all?page_size=200`
+          : `${apiUrl}/employees/list/${acteurId}?page_size=200`;
+        const response = await fetch(url, { headers: { ...authService.getAuthHeader() } });
+
         if (response.ok) {
-          const data = await response.json();
-          
-          if (data && Array.isArray(data) && data.length > 0) {
-            // Transformer les données de l'API en Employee
-            const transformedEmployees = data.map((emp: any) => {
-              
-              const statut: 'Contractuel' | 'Fonctionnaire' = emp.type_personne === 'Fonctionnaire' ? 'Fonctionnaire' : 'Contractuel';
-              const genre: 'M' | 'F' = (emp.genre === 'M' || emp.genre === 'F') ? emp.genre : 'M';
-              
-              const transformed: Employee = {
-                id: emp.id || '',
-                nom: String(emp.nom || '').trim(),
-                prenom: String(emp.prenom || '').trim(),
-                matricule: emp.matricule && emp.matricule !== '-' ? emp.matricule : undefined,
-                qualification: String(emp.qualification || 'Inconnu').trim(),
-                poste: String(emp.poste || 'Non spécifié').trim(),
-                statut,
-                genre,
-                age: Number(emp.age) || 0,
-                date_naissance: emp.date_naissance || undefined,
-                contact: emp.contact && emp.contact !== '-' ? emp.contact : undefined,
-                diplome: emp.diplome && emp.diplome !== '-' ? emp.diplome : undefined,
-                ecole: emp.ecole && emp.ecole !== '-' && typeof emp.ecole === 'string' ? emp.ecole : undefined,
-                type_contrat: emp.type_contrat && emp.type_contrat !== '-' ? emp.type_contrat : undefined,
-                date_debut: emp.date_debut || undefined,
-                date_fin: emp.date_fin || undefined,
-                validiteContrat: emp.is_active ? 'En cours' : 'Expiré',
-                qualiteContrat: String(emp.categorie_poste || 'Indéterminée').trim(),
-                categorie_poste: emp.categorie_poste && emp.categorie_poste !== '-' ? emp.categorie_poste : undefined,
-                region: String(emp.region || '-').trim(),
-                departement: String(emp.departement || '-').trim(),
-                sousPrefecture: String(emp.sous_prefecture || '-').trim(),
-                projets: Array.isArray(emp.projets) ? emp.projets : [],
-              };
-              
-              return transformed;
-            });
-            setEmployees(transformedEmployees);
-            setIsLoading(false);
-          } else {
-            setEmployees([]);
-            setIsLoading(false);
-          }
+          const raw = await response.json();
+          // L'API retourne {items, total, page, pages} depuis la pagination server-side
+          const data: any[] = Array.isArray(raw) ? raw : (raw.items ?? []);
+
+          setEmployees(transformEmployees(data));
+          setIsLoading(false);
         } else {
           console.error('Erreur API:', response.status);
           const errorText = await response.text();
@@ -188,27 +183,24 @@ export default function EmployeesPage() {
   });
 
   // Tri par colonne
-  const sortedEmployees = [...filteredEmployees].sort((a, b) => {
-    if (!sortField) {
-      // Par défaut, afficher les employés les plus récents en premier (ordre inverse de l'API)
-      return 0;
-    }
-    
-    const aValue = a[sortField];
-    const bValue = b[sortField];
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortOrder === 'asc' 
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-    
-    if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
-    }
-    
-    return 0;
-  }).reverse();
+  const sortedEmployees = sortField
+    ? [...filteredEmployees].sort((a, b) => {
+        const aValue = a[sortField];
+        const bValue = b[sortField];
+
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortOrder === 'asc'
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        }
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+
+        return 0;
+      })
+    : [...filteredEmployees].reverse();
 
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -277,54 +269,20 @@ export default function EmployeesPage() {
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
         const url = isRespo
-          ? `${apiUrl}/employees/list-all`
-          : `${apiUrl}/employees/list/${acteurId}`;
-        const response = await fetch(url);
-        
+          ? `${apiUrl}/employees/list-all?page_size=200`
+          : `${apiUrl}/employees/list/${acteurId}?page_size=200`;
+        const response = await fetch(url, { headers: { ...authService.getAuthHeader() } });
+
         if (response.ok) {
-          const data = await response.json();
-          
-          if (data && Array.isArray(data) && data.length > 0) {
-            const transformedEmployees = data.map((emp: any) => {
-              const statut: 'Contractuel' | 'Fonctionnaire' = emp.type_personne === 'Fonctionnaire' ? 'Fonctionnaire' : 'Contractuel';
-              const genre: 'M' | 'F' = (emp.genre === 'M' || emp.genre === 'F') ? emp.genre : 'M';
-              
-              return {
-                id: emp.id || '',
-                nom: String(emp.nom || '').trim(),
-                prenom: String(emp.prenom || '').trim(),
-                matricule: emp.matricule && emp.matricule !== '-' ? emp.matricule : undefined,
-                qualification: String(emp.qualification || 'Inconnu').trim(),
-                poste: String(emp.poste || 'Non spécifié').trim(),
-                statut,
-                genre,
-                age: Number(emp.age) || 0,
-                date_naissance: emp.date_naissance || undefined,
-                contact: emp.contact && emp.contact !== '-' ? emp.contact : undefined,
-                diplome: emp.diplome && emp.diplome !== '-' ? emp.diplome : undefined,
-                ecole: emp.ecole && emp.ecole !== '-' && typeof emp.ecole === 'string' ? emp.ecole : undefined,
-                type_contrat: emp.type_contrat && emp.type_contrat !== '-' ? emp.type_contrat : undefined,
-                date_debut: emp.date_debut || undefined,
-                date_fin: emp.date_fin || undefined,
-                validiteContrat: emp.is_active ? 'En cours' : 'Expiré',
-                qualiteContrat: String(emp.categorie_poste || 'Indéterminée').trim(),
-                categorie_poste: emp.categorie_poste && emp.categorie_poste !== '-' ? emp.categorie_poste : undefined,
-                region: String(emp.region || '-').trim(),
-                departement: String(emp.departement || '-').trim(),
-                sousPrefecture: String(emp.sous_prefecture || '-').trim(),
-                projets: Array.isArray(emp.projets) ? emp.projets : [],
-              };
-            });
-            setEmployees(transformedEmployees);
-          } else {
-            setEmployees([]);
-          }
+          const raw = await response.json();
+          const data: any[] = Array.isArray(raw) ? raw : (raw.items ?? []);
+          setEmployees(transformEmployees(data));
         }
       } catch (err) {
         console.error('Erreur lors du rechargement des employés:', err);
       }
     };
-    
+
     fetchEmployees();
   };
 
@@ -593,27 +551,15 @@ export default function EmployeesPage() {
   };
 
   // Calcul des statistiques réelles
-  const maleCount = employees.filter((emp) => emp.genre === 'M').length;
-  const femaleCount = employees.filter((emp) => emp.genre === 'F').length;
-  const activeContracts = employees.filter((emp) => emp.validiteContrat === 'En cours').length;
+  const total          = employees.length;
+  const maleCount      = employees.filter((emp) => emp.genre === 'M').length;
+  const femaleCount    = employees.filter((emp) => emp.genre === 'F').length;
+  const young          = employees.filter((emp) => emp.age <= 25).length;
+  const senior         = employees.filter((emp) => emp.age > 25).length;
+  const activeContracts  = employees.filter((emp) => emp.validiteContrat === 'En cours').length;
+  const expiredContracts = employees.filter((emp) => emp.validiteContrat === 'Expiré').length;
 
-  const stats = [
-    {
-      title: 'Employés par genre',
-      icon: Users,
-      color: '#FF8C00',
-      items: [
-        { label: 'Hommes', value: maleCount },
-        { label: 'Femmes', value: femaleCount },
-      ],
-    },
-    {
-      title: 'Contrats actifs',
-      icon: CheckCircle,
-      color: '#27AE60',
-      value: activeContracts,
-    },
-  ];
+  const pct = (n: number) => total ? Math.round(n / total * 100) : 0;
 
   const formatDateTime = () => {
     const options: Intl.DateTimeFormatOptions = {
@@ -638,113 +584,154 @@ export default function EmployeesPage() {
             </div>
           </div>
           <div className="header-right">
+            <button
+              className={`stats-toggle-btn${statsOpen ? ' open' : ''}`}
+              onClick={() => setStatsOpen(o => !o)}
+              title={statsOpen ? 'Masquer les statistiques' : 'Afficher les statistiques'}
+            >
+              <BarChart2 size={14} />
+              <span>{statsOpen ? 'Masquer stats' : 'Afficher stats'}</span>
+              <ChevronDown size={14} className="toggle-chevron" />
+            </button>
             <div style={{ position: 'relative' }}>
-              <button className="export-btn" onClick={() => setShowExportMenu(!showExportMenu)} title="Exporter les données">
-                <Download size={20} />
+              <button className="export-btn" onClick={() => setShowExportMenu(!showExportMenu)} title="Exporter">
+                <Download size={16} />
                 <span>Exporter</span>
               </button>
               {showExportMenu && (
                 <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '0.5rem',
-                  backgroundColor: darkMode ? '#2d2d44' : 'white',
-                  border: `1px solid ${darkMode ? '#4a4a6a' : '#e0e0e0'}`,
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                  zIndex: 100,
-                  minWidth: '160px',
+                  position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
+                  background: darkMode ? '#161B22' : '#fff',
+                  border: `1px solid ${darkMode ? '#30363D' : '#E2E8F0'}`,
+                  borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.14)', minWidth: 160, overflow: 'hidden',
                 }}>
-                  <button
-                    onClick={() => exportData('csv')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      width: '100%',
-                      padding: '0.75rem 1rem',
-                      border: 'none',
-                      background: 'none',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      color: darkMode ? '#e0e0e0' : '#2c3e50',
-                      fontSize: '0.9rem',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = darkMode ? '#3a3a52' : '#f5f5f5'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                  >
-                    <BarChart2 size={16} /> Exporter CSV
-                  </button>
-                  <button
-                    onClick={() => exportData('pdf')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      width: '100%',
-                      padding: '0.75rem 1rem',
-                      border: 'none',
-                      background: 'none',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      color: darkMode ? '#e0e0e0' : '#2c3e50',
-                      fontSize: '0.9rem',
-                      borderTop: `1px solid ${darkMode ? '#4a4a6a' : '#e0e0e0'}`,
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = darkMode ? '#3a3a52' : '#f5f5f5'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                  >
-                    <FileText size={16} /> Exporter PDF
-                  </button>
+                  {[{ label: 'Exporter CSV', icon: BarChart2, fn: () => exportData('csv') },
+                    { label: 'Exporter PDF', icon: FileText,  fn: () => exportData('pdf') }]
+                    .map(item => (
+                      <button key={item.label} onClick={item.fn} style={{
+                        display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                        padding: '10px 14px', border: 'none', background: 'none',
+                        cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                        color: darkMode ? '#E6EDF3' : '#1A202C',
+                      }}
+                        onMouseEnter={e => (e.currentTarget.style.background = darkMode ? '#21262D' : '#F7FAFC')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                      >
+                        <item.icon size={14} /> {item.label}
+                      </button>
+                    ))}
                 </div>
               )}
             </div>
             {!isRespo && (
-              <button className="add-btn" onClick={handleOpenCreateModal} title="Ajouter un employé">
-                <Plus size={20} />
+              <button className="add-btn" onClick={handleOpenCreateModal}>
+                <Plus size={16} />
                 <span>Nouvel employé</span>
               </button>
             )}
           </div>
         </div>
 
-        <div className="stats-grid">
-          {isLoading ? (
-            Array.from({ length: 2 }).map((_, index) => (
-              <div key={index} className="stat-card-skeleton" />
-            ))
-          ) : (
-            stats.map((stat, index) => (
-              <div key={index} className="stat-card">
-                <div className="stat-header">
-                  <div className="stat-icon" style={{ backgroundColor: stat.color + '20', color: stat.color }}>
-                    <stat.icon size={24} />
+        <div className={`kpi-section${statsOpen ? ' open' : ' closed'}`}>
+          <div className="stat-cards-row">
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => <div key={i} className="kpi-skeleton" />)
+            ) : (<>
+
+              {/* Card genre */}
+              <div className="stat-card-v3" style={{ borderTopColor: '#3498DB' }}>
+                <div className="sc-header">
+                  <div className="sc-icon" style={{ background: '#3498DB18', color: '#3498DB' }}>
+                    <Users size={18} />
                   </div>
-                  <h3>{stat.title}</h3>
+                  <div>
+                    <p className="sc-title">Répartition par genre</p>
+                    <p className="sc-total">{total} employé{total !== 1 ? 's' : ''}</p>
+                  </div>
                 </div>
-                <div className="stat-body">
-                  {stat.items ? (
-                    <div className="stat-items">
-                      {stat.items.map((item, idx) => (
-                        <div key={idx} className="stat-item">
-                          <span className="item-label">{item.label}</span>
-                          <span className="item-value">{item.value}</span>
-                        </div>
-                      ))}
+                <div className="sc-rows">
+                  <div className="sc-row">
+                    <span className="sc-row-label">Hommes</span>
+                    <div className="sc-bar-wrap">
+                      <div className="sc-bar" style={{ width: `${pct(maleCount)}%`, background: '#3498DB' }} />
                     </div>
-                  ) : (
-                    <div className="stat-value-large">{stat.value}</div>
-                  )}
+                    <span className="sc-row-val">{maleCount} <em>{pct(maleCount)}%</em></span>
+                  </div>
+                  <div className="sc-row">
+                    <span className="sc-row-label">Femmes</span>
+                    <div className="sc-bar-wrap">
+                      <div className="sc-bar" style={{ width: `${pct(femaleCount)}%`, background: '#9B59B6' }} />
+                    </div>
+                    <span className="sc-row-val">{femaleCount} <em>{pct(femaleCount)}%</em></span>
+                  </div>
                 </div>
               </div>
-            ))
-          )}
+
+              {/* Card âge */}
+              <div className="stat-card-v3" style={{ borderTopColor: '#FF8C00' }}>
+                <div className="sc-header">
+                  <div className="sc-icon" style={{ background: '#FF8C0018', color: '#FF8C00' }}>
+                    <UserCheck size={18} />
+                  </div>
+                  <div>
+                    <p className="sc-title">Tranche d'âge</p>
+                    <p className="sc-total">{total} employé{total !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+                <div className="sc-rows">
+                  <div className="sc-row">
+                    <span className="sc-row-label">≤ 25 ans</span>
+                    <div className="sc-bar-wrap">
+                      <div className="sc-bar" style={{ width: `${pct(young)}%`, background: '#FF8C00' }} />
+                    </div>
+                    <span className="sc-row-val">{young} <em>{pct(young)}%</em></span>
+                  </div>
+                  <div className="sc-row">
+                    <span className="sc-row-label">&gt; 25 ans</span>
+                    <div className="sc-bar-wrap">
+                      <div className="sc-bar" style={{ width: `${pct(senior)}%`, background: '#F39C12' }} />
+                    </div>
+                    <span className="sc-row-val">{senior} <em>{pct(senior)}%</em></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card contrats */}
+              <div className="stat-card-v3" style={{ borderTopColor: '#27AE60' }}>
+                <div className="sc-header">
+                  <div className="sc-icon" style={{ background: '#27AE6018', color: '#27AE60' }}>
+                    <CheckCircle size={18} />
+                  </div>
+                  <div>
+                    <p className="sc-title">État des contrats</p>
+                    <p className="sc-total">{total} employé{total !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+                <div className="sc-rows">
+                  <div className="sc-row">
+                    <span className="sc-row-label">Actifs</span>
+                    <div className="sc-bar-wrap">
+                      <div className="sc-bar" style={{ width: `${pct(activeContracts)}%`, background: '#27AE60' }} />
+                    </div>
+                    <span className="sc-row-val">{activeContracts} <em>{pct(activeContracts)}%</em></span>
+                  </div>
+                  <div className="sc-row">
+                    <span className="sc-row-label">Expirés</span>
+                    <div className="sc-bar-wrap">
+                      <div className="sc-bar" style={{ width: `${pct(expiredContracts)}%`, background: '#E74C3C' }} />
+                    </div>
+                    <span className="sc-row-val">{expiredContracts} <em>{pct(expiredContracts)}%</em></span>
+                  </div>
+                </div>
+              </div>
+
+            </>)}
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div className="search-bar" style={{ flex: 1 }}>
-            <Search size={20} className="search-icon" />
+        <div className="ep-filters">
+          <div className="search-bar">
+            <Search size={15} className="search-icon" />
             <input
               type="text"
               placeholder="Rechercher un employé..."
@@ -752,44 +739,33 @@ export default function EmployeesPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
             />
+            {searchTerm && (
+              <button className="search-clear" onClick={() => setSearchTerm('')} title="Effacer">✕</button>
+            )}
           </div>
-          <select
-            value={selectedProject}
-            onChange={(e) => {
-              setSelectedProject(e.target.value);
-              setCurrentPage(1);
-            }}
-            style={{
-              padding: '0.75rem 1rem',
-              border: `1px solid ${darkMode ? '#4a4a6a' : '#ddd'}`,
-              borderRadius: '8px',
-              background: darkMode ? '#3a3a52' : 'white',
-              color: darkMode ? '#e0e0e0' : '#2c3e50',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '0.9rem',
-              transition: 'all 0.3s ease',
-              minWidth: '200px',
-            }}
-          >
-            <option value="">📋 Tous les projets</option>
-            {projects.map((proj) => (
-              <option key={proj.id} value={proj.id}>
-                {proj.nom}
-              </option>
-            ))}
-          </select>
+          <div className="project-filter">
+            <Layers size={15} className="filter-icon" />
+            <select
+              value={selectedProject}
+              onChange={(e) => { setSelectedProject(e.target.value); setCurrentPage(1); }}
+              className="filter-select"
+            >
+              <option value="">Tous les projets</option>
+              {projects.map((proj) => <option key={proj.id} value={proj.id}>{proj.nom}</option>)}
+            </select>
+          </div>
+          <div className="ep-count-badge">
+            <Users size={13} />
+            <span>{filteredEmployees.length} résultat{filteredEmployees.length !== 1 ? 's' : ''}</span>
+          </div>
         </div>
       </div>
 
       <div className="employees-container">
         <div className="table-controls">
           <div className="items-per-page">
-            <label>Afficher par page:</label>
-            <select value={itemsPerPage} onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}>
+            <label>Par page :</label>
+            <select value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
               <option value={5}>5</option>
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -797,7 +773,7 @@ export default function EmployeesPage() {
             </select>
           </div>
           <div className="table-info">
-            Affichage {indexOfFirstItem + 1} à {Math.min(indexOfLastItem, filteredEmployees.length)} sur {filteredEmployees.length} employés
+            {indexOfFirstItem + 1}–{Math.min(indexOfLastItem, filteredEmployees.length)} sur {filteredEmployees.length}
           </div>
         </div>
 
@@ -808,41 +784,39 @@ export default function EmployeesPage() {
           <table className="employees-table">
             <thead>
               <tr>
-                <th onClick={() => handleSort('nom')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  NOM {sortField === 'nom' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
+                {([
+                  { key: 'nom',            label: 'Nom' },
+                  { key: 'prenom',         label: 'Prénom' },
+                  { key: 'qualification',  label: 'Qualification' },
+                  { key: 'poste',          label: 'Poste' },
+                  { key: 'statut',         label: 'Statut' },
+                  { key: 'genre',          label: 'Genre' },
+                  { key: 'age',            label: 'Âge' },
+                  { key: 'validiteContrat',label: 'Contrat' },
+                ] as { key: SortField; label: string }[]).map(col => (
+                  <th key={col.key as string} onClick={() => handleSort(col.key as keyof Employee)} className="th-sortable">
+                    <span>{col.label}</span>
+                    <span className="sort-icon">
+                      {sortField === col.key
+                        ? sortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                        : <ArrowUp size={12} className="sort-neutral" />}
+                    </span>
+                  </th>
+                ))}
+                <th>Projets</th>
+                <th onClick={() => handleSort('region')} className="th-sortable">
+                  <span>Région</span>
+                  <span className="sort-icon">{sortField === 'region' ? sortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} /> : <ArrowUp size={12} className="sort-neutral" />}</span>
                 </th>
-                <th onClick={() => handleSort('prenom')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  PRÉNOM {sortField === 'prenom' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
+                <th onClick={() => handleSort('departement')} className="th-sortable">
+                  <span>Département</span>
+                  <span className="sort-icon">{sortField === 'departement' ? sortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} /> : <ArrowUp size={12} className="sort-neutral" />}</span>
                 </th>
-                <th onClick={() => handleSort('qualification')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  QUALIFICATION {sortField === 'qualification' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
+                <th onClick={() => handleSort('sousPrefecture')} className="th-sortable">
+                  <span>Sous-préfecture</span>
+                  <span className="sort-icon">{sortField === 'sousPrefecture' ? sortOrder === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} /> : <ArrowUp size={12} className="sort-neutral" />}</span>
                 </th>
-                <th onClick={() => handleSort('poste')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  POSTE {sortField === 'poste' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
-                </th>
-                <th onClick={() => handleSort('statut')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  STATUT {sortField === 'statut' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
-                </th>
-                <th onClick={() => handleSort('genre')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  GENRE {sortField === 'genre' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
-                </th>
-                <th onClick={() => handleSort('age')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  ÂGE {sortField === 'age' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
-                </th>
-                <th onClick={() => handleSort('validiteContrat')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  VALIDITÉ DU CONTRAT {sortField === 'validiteContrat' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
-                </th>
-                <th>PROJETS</th>
-                <th onClick={() => handleSort('region')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  RÉGION {sortField === 'region' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
-                </th>
-                <th onClick={() => handleSort('departement')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  DÉPARTEMENT {sortField === 'departement' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
-                </th>
-                <th onClick={() => handleSort('sousPrefecture')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  SOUS-PRÉFECTURE {sortField === 'sousPrefecture' && (sortOrder === 'asc' ? <ArrowUp size={14} style={{ display: 'inline', marginLeft: '4px' }} /> : <ArrowDown size={14} style={{ display: 'inline', marginLeft: '4px' }} />)}
-                </th>
-                <th>ACTIONS</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -857,7 +831,7 @@ export default function EmployeesPage() {
                       {employee.statut}
                     </span>
                   </td>
-                  <td>{employee.genre}</td>
+                  <td><span className={`genre-badge genre-${employee.genre.toLowerCase()}`}>{employee.genre === 'M' ? 'Homme' : 'Femme'}</span></td>
                   <td>{employee.age}</td>
                   <td>
                     <span className={`validity-badge ${employee.validiteContrat === 'Expiré' ? 'expired' : ''}`}>
@@ -866,13 +840,13 @@ export default function EmployeesPage() {
                   </td>
                   <td>
                     {employee.projets && employee.projets.length > 0 ? (
-                      <div style={{ fontSize: '0.85em' }}>
+                      <div className="proj-list">
                         {employee.projets.map((proj, idx) => (
-                          <div key={idx}>{proj.nom}</div>
+                          <span key={idx} className="proj-tag">{proj.nom}</span>
                         ))}
                       </div>
                     ) : (
-                      '-'
+                      <span className="empty-cell">—</span>
                     )}
                   </td>
                   <td>{employee.region}</td>

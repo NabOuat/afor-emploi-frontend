@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getDashboardPath } from '../utils/navigation';
 
 interface RoleBasedRouteProps {
   children: React.ReactNode;
@@ -35,22 +36,6 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({ children }) => {
   if (!actorType) {
     return <Navigate to="/login" replace />;
   }
-
-  const getDashboardPath = (type: string): string => {
-    const typeUpper = type?.toUpperCase() || '';
-    switch (typeUpper) {
-      case 'OF':
-        return '/operator/dashboard';
-      case 'AF':
-        return '/afor/dashboard';
-      case 'RESPO':
-        return '/responsable/dashboard';
-      case 'AD':
-        return '/admin/dashboard';
-      default:
-        return '/dashboard';
-    }
-  };
 
   if (shouldRedirect) {
     const dashboardPath = getDashboardPath(actorType);

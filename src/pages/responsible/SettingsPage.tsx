@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import authService from '../../services/authService';
 
 type Tab = 'profile' | 'security' | 'notifications' | 'appearance';
 
@@ -43,7 +44,7 @@ export default function ResponsibleSettingsPage() {
     setNom(user.nom || '');
     setPrenom(user.prenom || '');
     // Fetch fresh profile (includes email)
-    fetch(`${apiUrl}/auth/me/${user.username}`)
+    fetch(`${apiUrl}/auth/me/${user.username}`, { headers: authService.getAuthHeader() })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.email) setEmail(data.email); })
       .catch(() => {});
@@ -61,7 +62,7 @@ export default function ResponsibleSettingsPage() {
     try {
       const res = await fetch(`${apiUrl}/auth/update-profile`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
         body: JSON.stringify({ username: user.username, nom, prenom, email }),
       });
       if (!res.ok) {
@@ -89,7 +90,7 @@ export default function ResponsibleSettingsPage() {
     try {
       const res = await fetch(`${apiUrl}/auth/send-test-report`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
         body: JSON.stringify({ username: user.username }),
       });
       if (!res.ok) {
@@ -124,7 +125,7 @@ export default function ResponsibleSettingsPage() {
     try {
       const res = await fetch(`${apiUrl}/auth/change-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
         body: JSON.stringify({ username: user.username, old_password: oldPwd, new_password: newPwd }),
       });
       if (!res.ok) {
