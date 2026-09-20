@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Globe, Plus, Trash2, Search, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import authService from '../../services/authService';
+import '../../styles/AdminPages.css';
 
 interface Zone {
   id: string;
@@ -26,27 +28,9 @@ const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
   RESPO: { bg: 'rgba(39,174,96,0.12)',  color: '#27AE60' },
 };
 
-function useTheme(dark: boolean) {
-  return {
-    page:        dark ? '#10141c' : '#f4f6f9',
-    card:        dark ? '#1c2333' : '#ffffff',
-    cardAlt:     dark ? '#1e2840' : '#fafbfc',
-    input:       dark ? '#252d3d' : '#ffffff',
-    inputBg:     dark ? '#252d3d' : '#f8fafc',
-    inputBorder: dark ? '#3a4560' : '#e8edf3',
-    border:      dark ? '#2e3a52' : '#e8edf3',
-    text:        dark ? '#e8edf3' : '#1f2d3d',
-    textSub:     dark ? '#8a98b0' : '#6b7a90',
-    textMuted:   dark ? '#4a5568' : '#c0c9d6',
-    theadBg:     dark ? '#252d3d' : '#f8fafc',
-    rowAlt:      dark ? '#1e2840' : '#fafbfc',
-  };
-}
-
 export default function ZonesManagement() {
-  const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api$/, '');
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
   const [dark] = useDarkMode();
-  const t = useTheme(dark);
 
   const [zones, setZones]     = useState<Zone[]>([]);
   const [acteurs, setActeurs] = useState<Acteur[]>([]);
@@ -72,37 +56,28 @@ export default function ZonesManagement() {
   const fetchData = async () => {
     setLoading(true);
     setApiError('');
-    console.log('[Zones] apiUrl =', apiUrl);
+    const authHeaders = authService.getAuthHeader();
     try {
-      console.log('[Zones] → fetch zones-intervention/full');
-      const zRes = await fetch(`${apiUrl}/api/zones-intervention/full`);
-      console.log('[Zones] ← zones', zRes.status, zRes.ok);
+      const zRes = await fetch(`${apiUrl}/api/zones-intervention/full`, { headers: authHeaders });
       if (zRes.ok) setZones(await zRes.json());
       else setApiError(`Erreur zones (${zRes.status})`);
-    } catch (e: any) { console.error('[Zones] zones error:', e); setApiError(`Erreur zones : ${e?.message}`); }
+    } catch (e: any) { setApiError(`Erreur zones : ${e?.message}`); }
 
     try {
-      console.log('[Zones] → fetch acteurs');
-      const aRes = await fetch(`${apiUrl}/api/acteurs`);
-      console.log('[Zones] ← acteurs', aRes.status, aRes.ok);
+      const aRes = await fetch(`${apiUrl}/api/acteurs`, { headers: authHeaders });
       if (aRes.ok) setActeurs(await aRes.json());
-    } catch (e: any) { console.error('[Zones] acteurs error:', e); }
+    } catch { }
 
     try {
-      console.log('[Zones] → fetch projets');
-      const pRes = await fetch(`${apiUrl}/api/projets`);
-      console.log('[Zones] ← projets', pRes.status, pRes.ok);
+      const pRes = await fetch(`${apiUrl}/api/projets`, { headers: authHeaders });
       if (pRes.ok) setProjets(await pRes.json());
-    } catch (e: any) { console.error('[Zones] projets error:', e); }
+    } catch { }
 
     try {
-      console.log('[Zones] → fetch regions');
-      const rRes = await fetch(`${apiUrl}/api/geographic/regions`);
-      console.log('[Zones] ← regions', rRes.status, rRes.ok);
+      const rRes = await fetch(`${apiUrl}/api/geographic/regions`, { headers: authHeaders });
       if (rRes.ok) setRegions(await rRes.json());
-    } catch (e: any) { console.error('[Zones] regions error:', e); }
+    } catch { }
 
-    console.log('[Zones] fetchData terminé');
     setLoading(false);
   };
 
@@ -128,7 +103,7 @@ export default function ZonesManagement() {
     try {
       const res = await fetch(`${apiUrl}/api/zones-intervention`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authService.getAuthHeader() },
         body: JSON.stringify({ acteur_id: form.acteur_id, projet_id: form.projet_id, region_id: form.region_id || null }),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); setFormError(e.detail || 'Erreur serveur.'); return; }
@@ -143,7 +118,7 @@ export default function ZonesManagement() {
     if (!selected) return;
     setSaving(true);
     try {
-      await fetch(`${apiUrl}/api/zones-intervention/${selected.id}`, { method: 'DELETE' });
+      await fetch(`${apiUrl}/api/zones-intervention/${selected.id}`, { method: 'DELETE', headers: authService.getAuthHeader() });
       showToast('success', 'Affectation retirée.');
       closeModal();
       fetchData();
@@ -151,100 +126,69 @@ export default function ZonesManagement() {
     finally { setSaving(false); }
   };
 
-  const sel: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${t.inputBorder}`, fontSize: '0.9rem', background: t.input, color: t.text, cursor: 'pointer', boxSizing: 'border-box' };
-  const lbl: React.CSSProperties = { display: 'block', fontSize: '0.82rem', fontWeight: 600, color: t.text, marginBottom: 5 };
-
   return (
-    <div style={{ minHeight: '100vh', background: t.page, padding: '24px' }}>
+    <div className={`ap-page${dark ? ' dark' : ''}`}>
 
-      {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 600, background: toast.type === 'success' ? '#27AE60' : '#E74C3C', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
-          {toast.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+        <div className={`ap-toast ${toast.type}`}>
+          {toast.type === 'success' ? <CheckCircle size={15}/> : <AlertCircle size={15}/>}
           {toast.message}
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: t.text }}>Zones d'Intervention</h1>
-          <p style={{ margin: '4px 0 0', color: t.textSub, fontSize: '0.9rem' }}>
-            Affectations Acteur → Projet → Région — {zones.length} affectation{zones.length !== 1 ? 's' : ''}
-          </p>
+      <div className="ap-header">
+        <div className="ap-header-left">
+          <h1>Zones d'Intervention</h1>
+          <p>Affectations Acteur → Projet → Région — {zones.length} affectation{zones.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg, #27AE60, #219a52)', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 3px 10px rgba(39,174,96,0.3)' }}>
-          <Plus size={18} /> Nouvelle affectation
-        </button>
+        <div className="ap-header-right">
+          <button className="ap-btn ap-btn-green" onClick={openCreate}><Plus size={15}/> Nouvelle affectation</button>
+        </div>
       </div>
 
-      {/* API error banner */}
       {apiError && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: dark ? 'rgba(231,76,60,0.12)' : '#fff3cd', border: `1px solid ${dark ? 'rgba(231,76,60,0.3)' : '#ffc107'}`, borderRadius: 8, color: dark ? '#E74C3C' : '#856404', fontSize: '0.88rem', marginBottom: 16 }}>
-          <AlertCircle size={16} style={{ flexShrink: 0 }} />
-          <span style={{ flex: 1 }}>{apiError}</span>
-          <button onClick={fetchData} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#27AE60', color: '#fff', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>Réessayer</button>
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 16px', background:'rgba(231,76,60,0.08)', border:'1px solid rgba(231,76,60,0.3)', borderRadius:8, color:'#E74C3C', fontSize:13, marginBottom:16 }}>
+          <AlertCircle size={15} style={{flexShrink:0}}/>
+          <span style={{flex:1}}>{apiError}</span>
+          <button className="ap-btn ap-btn-green" style={{padding:'4px 10px',fontSize:12}} onClick={fetchData}>Réessayer</button>
         </div>
       )}
 
-      {/* Filters */}
-      <div style={{ background: t.card, borderRadius: 12, border: `1px solid ${t.border}`, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200, background: t.inputBg, border: `1px solid ${t.inputBorder}`, borderRadius: 8, padding: '8px 12px' }}>
-          <Search size={16} color={t.textSub} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Acteur, projet, région…"
-            style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', color: t.text, width: '100%' }} />
+      <div className="ap-toolbar">
+        <div className="ap-search">
+          <Search size={15}/>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Acteur, projet, région…"/>
         </div>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${t.inputBorder}`, background: t.input, color: t.text, fontSize: '0.9rem', cursor: 'pointer' }}>
+        <select className="ap-filter-select" value={filterType} onChange={e => setFilterType(e.target.value)}>
           <option value="">Tous les types</option>
           {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <span style={{ fontSize: '0.85rem', color: t.textSub, marginLeft: 'auto' }}>{filtered.length} / {zones.length} affectation(s)</span>
+        <span className="ap-count">{filtered.length} / {zones.length} affectation(s)</span>
       </div>
 
-      {/* Table */}
-      <div style={{ background: t.card, borderRadius: 12, border: `1px solid ${t.border}`, overflow: 'hidden' }}>
+      <div className="ap-table-wrap">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: t.textSub }}>Chargement…</div>
+          <div className="ap-loading">Chargement…</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: t.textSub }}>
-            <Globe size={40} style={{ opacity: 0.3, marginBottom: 8 }} />
-            <p style={{ margin: 0 }}>Aucune affectation trouvée. Créez la première.</p>
-          </div>
+          <div className="ap-empty"><Globe size={40}/><p>Aucune affectation trouvée. Créez la première.</p></div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: t.theadBg, borderBottom: `2px solid ${t.border}` }}>
-                {['Acteur', 'Type', 'Projet', 'Région', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.8rem', fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
+          <table className="ap-table">
+            <thead><tr>{['Acteur','Type','Projet','Région','Actions'].map(h=><th key={h}>{h}</th>)}</tr></thead>
             <tbody>
-              {filtered.map((z, i) => {
-                const col = z.type_acteur ? (TYPE_COLORS[z.type_acteur] || { bg: 'rgba(100,100,100,0.1)', color: '#666' }) : null;
+              {filtered.map((z) => {
+                const col = z.type_acteur ? (TYPE_COLORS[z.type_acteur] || { bg:'rgba(100,100,100,0.1)', color:'#666' }) : null;
                 return (
-                  <tr key={z.id} style={{ borderBottom: `1px solid ${t.border}`, background: i % 2 === 0 ? t.card : t.rowAlt }}>
-                    <td style={{ padding: '13px 16px', fontWeight: 700, color: t.text, fontSize: '0.9rem' }}>
-                      {z.acteur_nom || <span style={{ color: t.textMuted }}>—</span>}
+                  <tr key={z.id}>
+                    <td style={{fontWeight:700}}>{z.acteur_nom || <span style={{opacity:.4}}>—</span>}</td>
+                    <td>
+                      {col && z.type_acteur
+                        ? <span className="ap-badge" style={{background:col.bg,color:col.color}}>{TYPE_LABELS[z.type_acteur]||z.type_acteur}</span>
+                        : <span style={{opacity:.4}}>—</span>}
                     </td>
-                    <td style={{ padding: '13px 16px' }}>
-                      {col && z.type_acteur ? (
-                        <span style={{ padding: '4px 10px', borderRadius: 6, background: col.bg, color: col.color, fontSize: '0.78rem', fontWeight: 700 }}>
-                          {TYPE_LABELS[z.type_acteur] || z.type_acteur}
-                        </span>
-                      ) : <span style={{ color: t.textMuted }}>—</span>}
-                    </td>
-                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: t.textSub }}>
-                      {z.projet_nom || <span style={{ color: t.textMuted }}>—</span>}
-                    </td>
-                    <td style={{ padding: '13px 16px', fontSize: '0.85rem', color: t.textSub }}>
-                      {z.region_nom || <span style={{ color: t.textMuted, fontStyle: 'italic' }}>Nationale</span>}
-                    </td>
-                    <td style={{ padding: '13px 16px' }}>
-                      <button onClick={() => openDelete(z)} style={{ padding: '6px 8px', borderRadius: 7, border: 'none', background: 'rgba(231,76,60,0.1)', color: '#E74C3C', cursor: 'pointer' }} title="Retirer">
-                        <Trash2 size={14} />
-                      </button>
+                    <td>{z.projet_nom || <span style={{opacity:.4}}>—</span>}</td>
+                    <td>{z.region_nom || <em style={{opacity:.5}}>Nationale</em>}</td>
+                    <td>
+                      <button className="ap-icon-btn delete" onClick={() => openDelete(z)} title="Retirer"><Trash2 size={14}/></button>
                     </td>
                   </tr>
                 );
@@ -254,75 +198,63 @@ export default function ZonesManagement() {
         )}
       </div>
 
-      {/* Create modal */}
       {modal === 'create' && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
-          <div style={{ background: t.card, borderRadius: 14, width: '100%', maxWidth: 460, boxShadow: '0 24px 64px rgba(0,0,0,0.4)', border: `1px solid ${t.border}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: `1px solid ${t.border}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(39,174,96,0.15)', color: '#27AE60', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Globe size={18} />
-                </div>
-                <h3 style={{ margin: 0, fontWeight: 700, color: t.text }}>Nouvelle affectation</h3>
-              </div>
-              <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.textSub, padding: 4 }}><X size={20} /></button>
+        <div className="ap-modal-overlay" onClick={closeModal}>
+          <div className="ap-modal" onClick={e => e.stopPropagation()}>
+            <div className="ap-modal-header">
+              <h2>Nouvelle affectation</h2>
+              <button className="ap-modal-close" onClick={closeModal}><X size={18}/></button>
             </div>
-            <div style={{ padding: '20px 24px' }}>
+            <div className="ap-modal-body">
               {formError && (
-                <div style={{ background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, color: '#E74C3C', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <AlertCircle size={14} /> {formError}
+                <div style={{background:'rgba(231,76,60,0.08)',border:'1px solid rgba(231,76,60,0.3)',borderRadius:6,padding:'8px 12px',marginBottom:12,color:'#E74C3C',fontSize:12,display:'flex',alignItems:'center',gap:6}}>
+                  <AlertCircle size={13}/>{formError}
                 </div>
               )}
               {([
-                { label: 'Acteur *', key: 'acteur_id', opts: acteurs.map(a => ({ v: a.id, l: `${a.nom} (${TYPE_LABELS[a.type_acteur] || a.type_acteur})` })) },
-                { label: 'Projet *', key: 'projet_id', opts: projets.map(p => ({ v: p.id, l: p.nom })) },
-                { label: 'Région (optionnel)', key: 'region_id', opts: regions.map(r => ({ v: r.id, l: r.nom })) },
-              ] as { label: string; key: string; opts: { v: string; l: string }[] }[]).map(({ label, key, opts }) => (
-                <div key={key} style={{ marginBottom: 14 }}>
-                  <label style={lbl}>{label}</label>
-                  <select value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={sel}>
+                { label:'Acteur *', key:'acteur_id', opts: acteurs.map(a=>({v:a.id,l:`${a.nom} (${TYPE_LABELS[a.type_acteur]||a.type_acteur})`})) },
+                { label:'Projet *', key:'projet_id', opts: projets.map(p=>({v:p.id,l:p.nom})) },
+                { label:'Région (optionnel)', key:'region_id', opts: regions.map(r=>({v:r.id,l:r.nom})) },
+              ] as {label:string;key:string;opts:{v:string;l:string}[]}[]).map(({label,key,opts})=>(
+                <div className="ap-field" key={key}>
+                  <label>{label}</label>
+                  <select className="ap-select" value={(form as any)[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}>
                     <option value="">— Sélectionner —</option>
-                    {opts.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                    {opts.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
                   </select>
                 </div>
               ))}
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-                <button onClick={closeModal} style={{ padding: '10px 20px', borderRadius: 9, border: `1px solid ${t.border}`, background: 'transparent', color: t.textSub, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
-                <button onClick={handleCreate} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 9, border: 'none', background: saving ? '#aaa' : 'linear-gradient(135deg, #27AE60, #219a52)', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
-                  {saving ? <div style={{ width: 14, height: 14, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> : <Plus size={15} />}
-                  Créer
-                </button>
-              </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete modal */}
-      {modal === 'delete' && selected && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
-          <div style={{ background: t.card, borderRadius: 14, width: '100%', maxWidth: 420, padding: '28px', boxShadow: '0 24px 64px rgba(0,0,0,0.4)', border: `1px solid ${t.border}` }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(231,76,60,0.1)', color: '#E74C3C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Trash2 size={24} />
-              </div>
-            </div>
-            <h3 style={{ margin: '0 0 8px', textAlign: 'center', color: t.text, fontWeight: 700 }}>Retirer cette affectation ?</h3>
-            <p style={{ margin: '0 0 24px', textAlign: 'center', color: t.textSub, fontSize: '0.9rem' }}>
-              <strong style={{ color: t.text }}>{selected.acteur_nom}</strong> → <strong style={{ color: t.text }}>{selected.projet_nom}</strong>
-              {selected.region_nom && <><br />Région : {selected.region_nom}</>}
-            </p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={closeModal} style={{ flex: 1, padding: '10px', borderRadius: 9, border: `1px solid ${t.border}`, background: 'transparent', color: t.textSub, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}>Annuler</button>
-              <button onClick={handleDelete} disabled={saving} style={{ flex: 1, padding: '10px', borderRadius: 9, border: 'none', background: saving ? '#aaa' : '#E74C3C', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
-                {saving ? 'Suppression…' : 'Retirer'}
+            <div className="ap-modal-footer">
+              <button className="ap-btn ap-btn-ghost" onClick={closeModal}>Annuler</button>
+              <button className="ap-btn ap-btn-green" onClick={handleCreate} disabled={saving}>
+                <Plus size={14}/>{saving ? 'Création…' : 'Créer'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } } input::placeholder { color: ${dark ? '#4a5a70' : '#aab4c0'} }`}</style>
+      {modal === 'delete' && selected && (
+        <div className="ap-modal-overlay" onClick={closeModal}>
+          <div className="ap-modal ap-modal-sm" onClick={e => e.stopPropagation()}>
+            <div className="ap-modal-body" style={{paddingTop:'1.75rem',paddingBottom:'1.5rem',textAlign:'center'}}>
+              <div className="ap-confirm-icon"><Trash2 size={24}/></div>
+              <h3 style={{margin:'0 0 8px',fontSize:16,fontWeight:800}}>Retirer cette affectation ?</h3>
+              <p className="ap-confirm-text">
+                <span className="ap-confirm-name">{selected.acteur_nom}</span> → <strong>{selected.projet_nom}</strong>
+                {selected.region_nom && <><br/><span style={{opacity:.7,fontSize:12}}>Région : {selected.region_nom}</span></>}
+              </p>
+            </div>
+            <div className="ap-modal-footer" style={{justifyContent:'center',gap:10}}>
+              <button className="ap-btn ap-btn-ghost" onClick={closeModal}>Annuler</button>
+              <button className="ap-btn ap-btn-danger" onClick={handleDelete} disabled={saving}>
+                <Trash2 size={14}/>{saving ? 'Suppression…' : 'Retirer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,44 +1,37 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Moon, Sun, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Moon, Sun, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDarkMode } from '../hooks/useDarkMode';
+import { getDashboardPath } from '../utils/navigation';
 import '../styles/LoginPage.css';
-
-function getDashboardPath(actorType: string | null): string {
-  switch ((actorType || '').toUpperCase()) {
-    case 'AF':    return '/afor/dashboard';
-    case 'OF':    return '/operator/dashboard';
-    case 'AD':    return '/admin/dashboard';
-    case 'RESPO': return '/responsable/dashboard';
-    default:      return '/dashboard';
-  }
-}
 
 export default function LoginPage() {
   const [username, setUsername]       = useState('');
   const [password, setPassword]       = useState('');
   const [darkMode, toggleDarkMode]    = useDarkMode();
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate                      = useNavigate();
   const { login, isLoading, error, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isLoading) {
       const actorType = sessionStorage.getItem('actor_type') || null;
-      navigate(getDashboardPath(actorType));
+      const dashboardPath = getDashboardPath(actorType);
+      navigate(dashboardPath, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) return;
+    if (!username || !password || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       await login({ username, password });
-      const actorType = sessionStorage.getItem('actor_type') || null;
-      navigate(getDashboardPath(actorType));
     } catch (err) {
       console.error('Login error:', err);
+      setIsSubmitting(false);
     }
   };
 
@@ -49,108 +42,112 @@ export default function LoginPage() {
       <button
         className="dark-mode-toggle"
         onClick={toggleDarkMode}
-        title="Basculer le mode sombre"
+        title={darkMode ? 'Basculer vers le mode clair' : 'Basculer vers le mode sombre'}
+        aria-label={darkMode ? 'Mode clair' : 'Mode sombre'}
       >
         {darkMode ? <Sun size={22} /> : <Moon size={22} />}
       </button>
 
       {/* ── Left brand panel ── */}
       <div className="login-brand-panel">
-        <div className="brand-circle brand-circle-1" />
-        <div className="brand-circle brand-circle-2" />
-        <div className="brand-circle brand-circle-3" />
+        <div className="login-left-deco deco1" aria-hidden="true" />
+        <div className="login-left-deco deco2" aria-hidden="true" />
 
-        <div className="brand-content">
-          <img src="/afor-logo.jpeg" alt="Afor Logo" className="brand-logo" />
+        <div className="login-brand">
+          <img src="/assets/images/logologin.png" alt="AFOR Emploi" className="login-logo-img" />
+          <p className="login-sub">Plateforme de gestion du personnel et des contrats</p>
 
-          <h2 className="brand-title">
-            Bienvenue sur<br />AFOR Emploi
-          </h2>
-
-          <p className="brand-subtitle">
-            La plateforme de gestion de l'emploi et de la formation professionnelle en Côte d'Ivoire.
-          </p>
-
-          <div className="brand-features">
-            {[
-              'Gestion des offres d\'emploi',
-              'Suivi des formations professionnelles',
-              'Tableau de bord centralisé',
-              'Rapports et statistiques en temps réel',
-            ].map((item) => (
-              <div key={item} className="brand-feature-item">
-                <span className="brand-feature-dot" />
-                {item}
-              </div>
-            ))}
+          <div className="login-features">
+            <div className="lf-item"><span className="lf-dot" aria-hidden="true" />Gestion des employés & contrats</div>
+            <div className="lf-item"><span className="lf-dot" aria-hidden="true" />Suivi des projets et zones</div>
+            <div className="lf-item"><span className="lf-dot" aria-hidden="true" />Tableau de bord centralisé</div>
+            <div className="lf-item"><span className="lf-dot" aria-hidden="true" />Rapports et statistiques</div>
           </div>
         </div>
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="login-form-panel">
-        <div className="login-form-inner">
+      <div className="login-right">
+        <div className="login-form-card">
 
-          <div className="login-header">
-            <h1>Connexion</h1>
-            <p className="tagline">Accédez à votre espace emploi</p>
+          <div className="lfc-header">
+            <h2>Connexion</h2>
+            <p>Accédez à votre espace de travail</p>
           </div>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="error-message" role="alert" aria-live="assertive">
+              <AlertCircle size={18} aria-hidden="true" />
+              <span>{error}</span>
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="form-group">
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="form-field">
               <label htmlFor="username">Nom d'utilisateur</label>
-              <div className="input-wrapper">
-                <Mail size={18} className="input-icon" />
+              <div className="input-wrap">
+                <Mail size={18} className="input-icon" aria-hidden="true" />
                 <input
                   id="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="votre_nom_utilisateur"
+                  autoComplete="username"
                   required
+                  aria-required="true"
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
 
-            <div className="form-group">
+            <div className="form-field">
               <label htmlFor="password">Mot de passe</label>
-              <div className="input-wrapper">
-                <Lock size={18} className="input-icon" />
+              <div className="input-wrap">
+                <Lock size={18} className="input-icon" aria-hidden="true" />
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   required
+                  aria-required="true"
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
-                  className="password-toggle"
+                  className="eye-btn"
                   onClick={() => setShowPassword(!showPassword)}
-                  title={showPassword ? 'Masquer' : 'Afficher'}
+                  title={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            <button type="submit" disabled={isLoading} className="submit-btn">
-              {isLoading ? (
+            <button 
+              type="submit" 
+              disabled={isLoading || isSubmitting || !username || !password} 
+              className="submit-btn"
+              aria-busy={isSubmitting || isLoading}
+            >
+              {(isLoading || isSubmitting) ? (
                 <>
-                  <span className="spinner" />
-                  Connexion en cours…
+                  <span className="spinner" aria-hidden="true" />
+                  <span>Connexion en cours…</span>
                 </>
               ) : (
-                'Se connecter'
+                <span>Se connecter</span>
               )}
             </button>
           </form>
 
           <p className="login-footer">
-            © {new Date().getFullYear()} AFOR — Agence d'Études et de Promotion de l'Emploi
+            © {new Date().getFullYear()} AFOR — Tous droits réservés DSG
           </p>
         </div>
       </div>

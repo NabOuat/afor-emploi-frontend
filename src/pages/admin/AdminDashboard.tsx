@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Users, Briefcase, TrendingUp, Download, Loader, AlertCircle, RefreshCw } from 'lucide-react';
+import { Users, Briefcase, TrendingUp, Download, Loader, AlertCircle, RefreshCw, CheckCircle } from 'lucide-react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import authService from '../../services/authService';
 import '../../styles/AdminDashboard.css';
 
 interface AdminStats {
@@ -43,36 +44,29 @@ export default function AdminDashboard() {
     setApiError(null);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const authHeaders = authService.getAuthHeader();
       const [adminRes, dashRes] = await Promise.all([
-        fetch(`${apiUrl}/dashboard/admin/stats`),
-        fetch(`${apiUrl}/dashboard/operator/all/global`),
+        fetch(`${apiUrl}/dashboard/admin/stats`, { headers: authHeaders }),
+        fetch(`${apiUrl}/dashboard/operator/all/global`, { headers: authHeaders }),
       ]);
 
       if (adminRes.ok) {
-        const data = await adminRes.json();
-        setAdminStats(data);
-      } else {
-        console.error('admin/stats failed:', adminRes.status);
+        setAdminStats(await adminRes.json());
+      } else if (adminRes.status === 401) {
+        window.location.href = '/login';
+        return;
       }
 
       if (dashRes.ok) {
-        const data = await dashRes.json();
-        console.log('[AdminDashboard] dashData reçu:', {
-          zones: data.employees_by_zone?.length,
-          genres: data.employees_by_gender?.length,
-          postes: data.employees_by_position?.length,
-          projets: data.employees_by_project?.length,
-          ageGroups: data.age_statistics?.age_groups,
-          hires: data.monthly_hires?.length,
-        });
-        setDashData(data);
+        setDashData(await dashRes.json());
+      } else if (dashRes.status === 401) {
+        window.location.href = '/login';
+        return;
       } else {
         const errText = await dashRes.text();
-        console.error('operator/all/global failed:', dashRes.status, errText);
         setApiError(`Erreur API ${dashRes.status}: ${errText.slice(0, 120)}`);
       }
     } catch (err: any) {
-      console.error('Erreur réseau admin dashboard:', err);
       setApiError(`Erreur réseau: ${err?.message || 'impossible de joindre le serveur'}`);
     } finally {
       setLoading(false);
@@ -112,74 +106,65 @@ export default function AdminDashboard() {
 
   const projectData = (dashData?.employees_by_project || []).slice(0, 8).map(p => ({ name: p.project_name, value: p.count }));
 
+  const tk = darkMode ? '#8B949E' : '#718096';
+  const gr = darkMode ? '#30363D' : '#E2E8F0';
   const displayName = user?.nom && user?.prenom ? `${user.prenom} ${user.nom}` : user?.username || 'Administrateur';
+
+  const kpiCards = [
+    { label: 'Total Acteurs',     value: adminStats?.total_acteurs   ?? '--', icon: Users,       color: '#FF8C00', description: 'Opérateurs, Écoles, Agences' },
+    { label: 'Total Personnel',   value: adminStats?.total_personnel  ?? '--', icon: Briefcase,   color: '#3498DB', description: 'Tous les employés' },
+    { label: 'Employés Actifs',   value: adminStats?.employes_actifs  ?? '--', icon: TrendingUp,  color: '#27AE60', description: 'En poste actuellement' },
+    { label: 'Total Projets',     value: adminStats?.total_projets    ?? '--', icon: CheckCircle, color: '#9B59B6', description: 'Projets enregistrés' },
+  ];
 
   return (
     <div className={`admin-dashboard ${darkMode ? 'dark-mode' : ''}`}>
+
+      {/* Header V3 */}
       <div className="admin-header">
-        <div className="admin-header-top">
-          <h1>Tableau de Bord Administrateur</h1>
-          <div className="admin-header-info">
-            <span className="org-name">AGENCE FONCIERE RURALE</span>
-            <span className="timestamp">Mise à jour: {new Date().toLocaleTimeString('fr-FR')}</span>
-          </div>
+        <div className="header-content">
+          <h1>Tableau de bord <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '0.5rem', padding: '2px 10px', borderRadius: 999, background: '#FF8C00', color: '#fff', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px', verticalAlign: 'middle' }}>AD</span></h1>
+          <p>Vue globale — {displayName} · <span style={{ color: tk, fontSize: '0.78rem' }}>Mise à jour : {new Date().toLocaleTimeString('fr-FR')}</span></p>
+        </div>
+        <div className="header-buttons">
+          <button className="btn-primary" onClick={fetchData} title="Rafraîchir"><RefreshCw size={15} /></button>
+          <button className="btn-primary"><Download size={15} />Exporter</button>
         </div>
       </div>
 
       <div className="admin-content">
-        <div className="welcome-section">
-          <h2>Bienvenue {displayName}</h2>
-        </div>
 
         {apiError && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.9rem 1.2rem', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 4, color: '#856404', fontSize: '0.85rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.9rem 1.2rem', background: darkMode ? '#1a1a2e' : '#fff3cd', border: `1px solid ${darkMode ? '#E74C3C44' : '#ffc107'}`, borderRadius: 10, color: darkMode ? '#ff8080' : '#856404', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
             <AlertCircle size={18} style={{ flexShrink: 0 }} />
             <span style={{ flex: 1 }}>{apiError}</span>
-            <button onClick={fetchData} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#ffc107', border: 'none', borderRadius: 3, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>
+            <button onClick={fetchData} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#FF8C00', border: 'none', borderRadius: 7, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', color: '#fff' }}>
               <RefreshCw size={13} /> Réessayer
             </button>
           </div>
         )}
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-            <Loader size={36} style={{ animation: 'spin 1s linear infinite' }} />
+          <div className="dashboard-loading">
+            <Loader size={36} className="spinner-icon" />
+            <p>Chargement des données…</p>
           </div>
         ) : (
           <>
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon actors">
-                  <Users size={32} />
+            {/* KPI — 4 colonnes */}
+            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+              {kpiCards.map((card, i) => (
+                <div key={i} className="stat-card" style={{ '--stat-color': card.color } as React.CSSProperties}>
+                  <div className="stat-icon" style={{ backgroundColor: card.color + '18', color: card.color }}>
+                    <card.icon size={20} />
+                  </div>
+                  <div className="stat-content">
+                    <p className="stat-label">{card.label}</p>
+                    <h3 className="stat-value">{typeof card.value === 'number' ? card.value.toLocaleString() : card.value}</h3>
+                    <p className="stat-description">{card.description}</p>
+                  </div>
                 </div>
-                <div className="stat-info">
-                  <h3>Total Acteurs</h3>
-                  <p className="stat-number">{adminStats?.total_acteurs ?? '--'}</p>
-                  <span className="stat-desc">Opérateurs, Écoles, Agences</span>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon personnel">
-                  <Briefcase size={32} />
-                </div>
-                <div className="stat-info">
-                  <h3>Total Personnel</h3>
-                  <p className="stat-number">{adminStats?.total_personnel ?? '--'}</p>
-                  <span className="stat-desc">Tous les employés</span>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon active">
-                  <TrendingUp size={32} />
-                </div>
-                <div className="stat-info">
-                  <h3>Employés Actifs</h3>
-                  <p className="stat-number">{adminStats?.employes_actifs ?? '--'}</p>
-                  <span className="stat-desc">En poste actuellement</span>
-                </div>
-              </div>
+              ))}
             </div>
 
             <div className="charts-section">

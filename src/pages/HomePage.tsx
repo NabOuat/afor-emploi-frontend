@@ -7,8 +7,8 @@ export default function HomePage() {
     <div className="home-page">
       <section className="hero">
         <div className="hero-content">
-          <h1>Trouvez votre emploi idéal</h1>
-          <p>Découvrez des milliers d'offres d'emploi et lancez votre carrière</p>
+          <h1>Afor Emploi</h1>
+          <p>Gestion des emplois</p>
           <div className="hero-search">
             <input
               type="text"

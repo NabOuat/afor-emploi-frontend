@@ -10,7 +10,11 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   access_token: string;
+  refresh_token: string;
   token_type: string;
+  username: string;
+  actor_type?: string | null;
+  acteur_id?: string | null;
 }
 
 export interface User {
@@ -28,51 +32,6 @@ class AuthService {
   private userKey = 'user';
   private acteurKey = 'acteur_id';
   private expiryKey = 'session_expiry';
-  private channel: BroadcastChannel;
-
-  constructor() {
-    this.channel = new BroadcastChannel('afor_auth');
-    this.channel.onmessage = this.handleMessage.bind(this);
-
-    // Si cet onglet n'a pas de session, demander aux autres onglets ouverts
-    if (!sessionStorage.getItem(this.tokenKey)) {
-      this.channel.postMessage({ type: 'SESSION_REQUEST' });
-    }
-  }
-
-  private handleMessage(event: MessageEvent): void {
-    const { type, data } = event.data;
-
-    if (type === 'SESSION_REQUEST') {
-      // Un autre onglet demande la session — on la partage si on en a une valide
-      if (this.isAuthenticated()) {
-        this.channel.postMessage({
-          type: 'SESSION_RESPONSE',
-          data: {
-            token: sessionStorage.getItem(this.tokenKey),
-            user: sessionStorage.getItem(this.userKey),
-            acteur_id: sessionStorage.getItem(this.acteurKey),
-            actor_type: sessionStorage.getItem('actor_type'),
-            expiry: sessionStorage.getItem(this.expiryKey),
-          },
-        });
-      }
-    } else if (type === 'SESSION_RESPONSE') {
-      // Un autre onglet a répondu — on adopte sa session si on n'en a pas
-      if (!sessionStorage.getItem(this.tokenKey) && data?.token) {
-        sessionStorage.setItem(this.tokenKey, data.token);
-        if (data.user) sessionStorage.setItem(this.userKey, data.user);
-        if (data.acteur_id) sessionStorage.setItem(this.acteurKey, data.acteur_id);
-        if (data.actor_type) sessionStorage.setItem('actor_type', data.actor_type);
-        if (data.expiry) sessionStorage.setItem(this.expiryKey, data.expiry);
-        window.dispatchEvent(new Event('session_restored'));
-      }
-    } else if (type === 'SESSION_LOGOUT') {
-      // Un autre onglet s'est déconnecté — on se déconnecte aussi
-      this._clearStorage();
-      window.dispatchEvent(new Event('session_logout'));
-    }
-  }
 
   private _clearStorage(): void {
     sessionStorage.removeItem(this.tokenKey);
@@ -80,6 +39,10 @@ class AuthService {
     sessionStorage.removeItem(this.acteurKey);
     sessionStorage.removeItem(this.expiryKey);
     sessionStorage.removeItem('actor_type');
+  }
+
+  logout(): void {
+    this._clearStorage();
   }
 
   async login(credentials: LoginRequest): Promise<LoginResponse> {
@@ -100,18 +63,21 @@ class AuthService {
     sessionStorage.setItem(this.tokenKey, data.access_token);
     sessionStorage.setItem(this.userKey, JSON.stringify({
       username: data.username,
-      nom: data.nom,
-      prenom: data.prenom,
-      actor_type: data.actor_type,
-      acteur_id: data.acteur_id,
+      nom: null,
+      prenom: null,
+      actor_type: data.actor_type || null,
+      acteur_id: data.acteur_id || null,
     }));
-    sessionStorage.setItem(this.expiryKey, String(expiry));
+    
+    // Stocker actor_type séparément pour la redirection
     if (data.actor_type) {
       sessionStorage.setItem('actor_type', data.actor_type);
     }
+    // Stocker acteur_id séparément (utilisé par les dashboards)
     if (data.acteur_id) {
       sessionStorage.setItem(this.acteurKey, data.acteur_id);
     }
+    sessionStorage.setItem(this.expiryKey, String(expiry));
 
     return data;
   }
@@ -145,7 +111,12 @@ class AuthService {
     if (!token) return false;
 
     const expiry = sessionStorage.getItem(this.expiryKey);
-    if (!expiry || Date.now() > Number(expiry)) {
+    if (!expiry) {
+      this.logout();
+      return false;
+    }
+
+    if (Date.now() > Number(expiry)) {
       this.logout();
       return false;
     }
@@ -164,12 +135,6 @@ class AuthService {
     const expiry = sessionStorage.getItem(this.expiryKey);
     if (!expiry) return 0;
     return Math.max(0, Number(expiry) - Date.now());
-  }
-
-  logout(): void {
-    this._clearStorage();
-    // Informer tous les autres onglets ouverts
-    this.channel.postMessage({ type: 'SESSION_LOGOUT' });
   }
 
   getAuthHeader(): { Authorization: string } | {} {

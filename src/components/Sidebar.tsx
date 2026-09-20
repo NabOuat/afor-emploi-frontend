@@ -4,23 +4,36 @@ import {
   LayoutDashboard, Users, Briefcase, Settings,
   LogOut, ChevronLeft, ChevronRight, Moon, Sun,
   Building2, X, Globe, MapPin,
+  Database, ChevronDown, Table2, FileCode2, Upload, Handshake, ArrowRightLeft,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDarkMode } from '../hooks/useDarkMode';
 import './Sidebar.css';
 
-interface NavItem {
+type IconType = React.ComponentType<{ size?: number }>;
+
+interface NavLeaf {
   label: string;
   path: string;
-  icon: React.ComponentType<{ size?: number }>;
+  icon: IconType;
 }
+
+interface NavGroup {
+  label: string;
+  icon: IconType;
+  children: NavLeaf[];
+}
+
+type NavEntry = NavLeaf | NavGroup;
+
+const isGroup = (e: NavEntry): e is NavGroup => 'children' in e;
 
 interface SidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
 }
 
-function getNavItems(actorType: string | null): NavItem[] {
+function getNavItems(actorType: string | null): NavEntry[] {
   const type = (actorType || '').toUpperCase();
   switch (type) {
     case 'AD':
@@ -28,17 +41,27 @@ function getNavItems(actorType: string | null): NavItem[] {
         { label: 'Tableau de bord', path: '/admin/dashboard', icon: LayoutDashboard },
         { label: 'Acteurs',         path: '/admin/actors',    icon: Building2 },
         { label: 'Projets',         path: '/admin/projects',  icon: Briefcase },
+        { label: 'Engagements',     path: '/admin/engagements', icon: Handshake },
         { label: 'Utilisateurs',    path: '/admin/users',     icon: Users },
         { label: 'Zones',           path: '/admin/zones',     icon: Globe },
         { label: 'Géographie',      path: '/admin/geo',       icon: MapPin },
         { label: 'Employés',        path: '/employees',       icon: Users },
+        {
+          label: 'Base de données',
+          icon: Database,
+          children: [
+            { label: 'Voir les tables', path: '/admin/database/tables', icon: Table2 },
+            { label: 'Schéma',          path: '/admin/database/schema', icon: FileCode2 },
+            { label: 'Importer',        path: '/admin/database/import', icon: Upload },
+            { label: 'Migration CSV',   path: '/admin/database/migrate', icon: ArrowRightLeft },
+          ],
+        },
         { label: 'Paramètres',      path: '/admin/settings',  icon: Settings },
       ];
     case 'AF':
       return [
         { label: 'Tableau de bord', path: '/afor/dashboard', icon: LayoutDashboard },
         { label: 'Employés',        path: '/employees',      icon: Users },
-        { label: 'Utilisateurs',    path: '/admin/users',    icon: Users },
         { label: 'Paramètres',      path: '/afor/settings',  icon: Settings },
       ];
     case 'OF':
@@ -70,6 +93,16 @@ function getRoleLabel(actorType: string | null): string {
   }
 }
 
+function getRoleColor(actorType: string | null): string {
+  switch ((actorType || '').toUpperCase()) {
+    case 'AD':    return '#FF8C00';
+    case 'AF':    return '#27AE60';
+    case 'OF':    return '#3498DB';
+    case 'RESPO': return '#9B59B6';
+    default:      return '#FF8C00';
+  }
+}
+
 const CHIBI_AVATARS = [
   { id: 'chibi1', emoji: '🧑‍💼', bg: '#FF8C00' },
   { id: 'chibi2', emoji: '👩‍💼', bg: '#3498DB' },
@@ -93,11 +126,28 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
   const [darkMode, toggleDarkMode] = useDarkMode();
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
 
   useEffect(() => {
     const savedAvatar = localStorage.getItem('user_avatar');
     if (savedAvatar) setSelectedAvatar(savedAvatar);
   }, []);
+
+  // Ouvrir automatiquement le groupe qui contient la route active
+  useEffect(() => {
+    getNavItems(actorType).forEach(entry => {
+      if (isGroup(entry) && entry.children.some(c => location.pathname.startsWith(c.path))) {
+        setOpenGroups(prev => (prev.includes(entry.label) ? prev : [...prev, entry.label]));
+      }
+    });
+  }, [actorType, location.pathname]);
+
+  const toggleGroup = (label: string) => {
+    if (collapsed) setCollapsed(false);
+    setOpenGroups(prev =>
+      prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
+    );
+  };
 
   const handleSelectAvatar = (avatarId: string | null) => {
     setSelectedAvatar(avatarId);
@@ -136,8 +186,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       <div className="sidebar-logo-bar">
         {!collapsed && (
           <div className="sidebar-logo-content">
-            <img src="/afor-logo.jpeg" alt="AFOR" className="sidebar-logo-img" />
-            <span className="sidebar-logo-name">AFOR</span>
+            <img src="/assets/images/logo.png" alt="AFOR Emploi" className="sidebar-logo-img" />
           </div>
         )}
         {/* Desktop collapse btn */}
@@ -164,7 +213,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           <div
             className="sidebar-user-avatar"
             onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-            style={{ cursor: 'pointer', fontSize: selectedAvatar ? '1.2rem' : '0.82rem', fontWeight: 700 }}
+            style={{ cursor: 'pointer', fontSize: selectedAvatar ? '1.2rem' : '0.82rem', fontWeight: 700, background: `${getRoleColor(actorType)}22`, color: getRoleColor(actorType) }}
             title="Changer d'avatar"
           >
             {selectedAvatar
@@ -174,7 +223,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           </div>
           <div className="sidebar-user-text">
             <span className="sidebar-user-name">{user.nom && user.prenom ? `${user.prenom} ${user.nom}` : user.username}</span>
-            <span className="sidebar-user-role">{roleLabel}</span>
+            <span className="sidebar-user-role" data-role={(actorType || '').toUpperCase()} style={{ background: `${getRoleColor(actorType)}22`, color: getRoleColor(actorType) }}>{roleLabel}</span>
           </div>
 
           {showAvatarPicker && (
@@ -208,7 +257,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           <div
             className="sidebar-user-avatar"
             title={user.username}
-            style={{ fontSize: selectedAvatar ? '1.2rem' : '0.82rem', fontWeight: 700 }}
+            style={{ fontSize: selectedAvatar ? '1.2rem' : '0.82rem', fontWeight: 700, background: `${getRoleColor(actorType)}22`, color: getRoleColor(actorType) }}
           >
             {selectedAvatar
               ? CHIBI_AVATARS.find(a => a.id === selectedAvatar)?.emoji || getInitials(user.username)
@@ -221,17 +270,57 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       {/* Navigation */}
       <div className="sidebar-body">
         <nav className="sidebar-nav">
-          {navItems.map(item => {
-            const isActive = location.pathname === item.path;
+          {navItems.map(entry => {
+            if (isGroup(entry)) {
+              const open = openGroups.includes(entry.label);
+              const groupActive = entry.children.some(c => location.pathname.startsWith(c.path));
+              return (
+                <div key={entry.label} className="sidebar-group">
+                  <button
+                    className={`sidebar-nav-item sidebar-group-header${groupActive ? ' active' : ''}`}
+                    onClick={() => toggleGroup(entry.label)}
+                    title={collapsed ? entry.label : undefined}
+                  >
+                    <entry.icon size={20} />
+                    {!collapsed && <span>{entry.label}</span>}
+                    {!collapsed && (
+                      <ChevronDown
+                        size={16}
+                        className={`sidebar-group-chevron${open ? ' open' : ''}`}
+                      />
+                    )}
+                  </button>
+                  {!collapsed && open && (
+                    <div className="sidebar-submenu">
+                      {entry.children.map(child => {
+                        const childActive = location.pathname.startsWith(child.path);
+                        return (
+                          <button
+                            key={child.path}
+                            className={`sidebar-nav-item sidebar-subitem${childActive ? ' active' : ''}`}
+                            onClick={() => handleNav(child.path)}
+                          >
+                            <child.icon size={18} />
+                            <span>{child.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const isActive = location.pathname === entry.path;
             return (
               <button
-                key={item.path}
+                key={entry.path}
                 className={`sidebar-nav-item${isActive ? ' active' : ''}`}
-                onClick={() => handleNav(item.path)}
-                title={collapsed ? item.label : undefined}
+                onClick={() => handleNav(entry.path)}
+                title={collapsed ? entry.label : undefined}
               >
-                <item.icon size={20} />
-                {!collapsed && <span>{item.label}</span>}
+                <entry.icon size={20} />
+                {!collapsed && <span>{entry.label}</span>}
               </button>
             );
           })}

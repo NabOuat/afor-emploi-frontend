@@ -13,7 +13,7 @@ export function Footer() {
           <h3>Liens rapides</h3>
           <ul>
             <li><a href="/">Accueil</a></li>
-            <li><a href="/jobs">Offres d'emploi</a></li>
+            <li><a href="/jobs">emploi</a></li>
             <li><a href="/contact">Contact</a></li>
           </ul>
         </div>
